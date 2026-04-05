@@ -37,6 +37,9 @@ class OllamaClient:
     ) -> None:
         self.model = model
         self._client = ollama_lib.Client(host=host)
+        self.last_prompt_tokens: int = 0
+        self.last_completion_tokens: int = 0
+        self.last_total_tokens: int = 0
 
     def chat(self, messages: list[Message], tools: list[dict[str, Any]] | None = None) -> Message:
         kwargs: dict[str, Any] = {
@@ -129,6 +132,12 @@ class OllamaClient:
                 )
                 for tc in raw_calls
             ]
+
+        # Track token usage from Ollama's response metadata
+        self.last_prompt_tokens = response.get("prompt_eval_count", 0)
+        self.last_completion_tokens = response.get("eval_count", 0)
+        self.last_total_tokens = self.last_prompt_tokens + self.last_completion_tokens
+
         return Message(
             role=Role(msg.get("role", "assistant")),
             content=msg.get("content") or None,

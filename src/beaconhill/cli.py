@@ -182,7 +182,7 @@ def _run_agentic_loop(
 
     for _ in range(MAX_ITERATIONS):
         # Compact if approaching context limit
-        if needs_compaction(session.messages):
+        if needs_compaction(session.messages, client=client):
             print("[compacting context...]")
             session.messages = compact_messages(session.messages, client)
 

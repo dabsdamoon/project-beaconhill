@@ -15,7 +15,7 @@ class Config:
     host: str = "http://localhost:11434"
     session_dir: str | None = None
     allow_all: bool = False
-    context_limit: int = 8192
+    context_limit: int = 32768
 
     @classmethod
     def load(cls, project_dir: Path | None = None) -> Config:

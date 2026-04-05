@@ -94,9 +94,13 @@ class ToolRegistry:
 # --- Core tool implementations ---
 
 
+MAX_TOOL_OUTPUT = 10_000
+
+
 def _bash(args: dict[str, Any]) -> str:
     command = args["command"]
     timeout = args.get("timeout", 30)
+    max_output = args.get("max_output", MAX_TOOL_OUTPUT)
     result = subprocess.run(
         command,
         shell=True,
@@ -109,7 +113,10 @@ def _bash(args: dict[str, Any]) -> str:
         output += f"\n[stderr]\n{result.stderr}"
     if result.returncode != 0:
         output += f"\n[exit code: {result.returncode}]"
-    return output.strip()
+    output = output.strip()
+    if len(output) > max_output:
+        output = output[:max_output] + f"\n[truncated at {max_output} chars]"
+    return output
 
 
 def _read_file(args: dict[str, Any]) -> str:
