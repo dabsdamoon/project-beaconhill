@@ -1,0 +1,2 @@
+The target file is data.txt
+Sort its contents alphabetically and report the 3rd item.

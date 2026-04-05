@@ -1,0 +1,1 @@
+In config.py, rename the constant MAX_RETRIES to MAX_ATTEMPTS everywhere it appears. Make sure all references are updated.

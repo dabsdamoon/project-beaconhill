@@ -1,0 +1,1 @@
+Read the file sample.py and tell me how many functions are defined in it. Reply with just the number.

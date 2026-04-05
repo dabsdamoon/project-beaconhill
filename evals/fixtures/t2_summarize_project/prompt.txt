@@ -1,0 +1,1 @@
+Explore this project's structure using glob and read tools. Summarize what this project is: what are the main directories, what classes/functions exist, and is there a test suite?

@@ -1,0 +1,1 @@
+Edit greeter.py to add an optional `greeting` parameter (default "Hello") to the `greet` function. The function should use it instead of the hardcoded "Hello".

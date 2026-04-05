@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ollama",
+      "runtimeExecutable": "/opt/homebrew/bin/ollama",
+      "runtimeArgs": ["serve"],
+      "port": 11434
+    }
+  ]
+}

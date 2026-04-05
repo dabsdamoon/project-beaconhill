@@ -1,0 +1,1 @@
+Read processor.py and test_processor.py. Run the tests with `python3 -m pytest test_processor.py -v`. Fix the bug that causes the test to fail, then verify the tests pass.
