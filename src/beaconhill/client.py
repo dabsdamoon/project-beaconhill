@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterator
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 import ollama as ollama_lib
 
@@ -15,6 +15,9 @@ RETRY_DELAYS = [2, 5, 10]
 class LLMClient(Protocol):
     def chat(self, messages: list[Message], tools: list[dict[str, Any]] | None = None) -> Message: ...
     def stream(self, messages: list[Message], tools: list[dict[str, Any]] | None = None) -> Iterator[str]: ...
+
+
+RetryCallback = Callable[[int, int, str], None]
 
 
 def _classify_error(e: Exception) -> str:
@@ -37,11 +40,17 @@ class OllamaClient:
     ) -> None:
         self.model = model
         self._client = ollama_lib.Client(host=host)
+        self.max_retries = MAX_RETRIES
         self.last_prompt_tokens: int = 0
         self.last_completion_tokens: int = 0
         self.last_total_tokens: int = 0
 
-    def chat(self, messages: list[Message], tools: list[dict[str, Any]] | None = None) -> Message:
+    def chat(
+        self,
+        messages: list[Message],
+        tools: list[dict[str, Any]] | None = None,
+        on_retry: RetryCallback | None = None,
+    ) -> Message:
         kwargs: dict[str, Any] = {
             "model": self.model,
             "messages": [m.to_ollama() for m in messages],
@@ -49,10 +58,14 @@ class OllamaClient:
         if tools:
             kwargs["tools"] = tools
 
-        response = self._call_with_retry(kwargs)
+        response = self._call_with_retry(kwargs, on_retry=on_retry)
         return self._parse_response(response)
 
-    def _call_with_retry(self, kwargs: dict[str, Any]) -> Any:
+    def _call_with_retry(
+        self,
+        kwargs: dict[str, Any],
+        on_retry: RetryCallback | None = None,
+    ) -> Any:
         last_error: Exception | None = None
         for attempt in range(MAX_RETRIES):
             try:
@@ -67,7 +80,8 @@ class OllamaClient:
                 if kind == "connection":
                     if attempt < MAX_RETRIES - 1:
                         delay = RETRY_DELAYS[attempt]
-                        print(f"[connection lost, retrying in {delay}s... ({attempt + 1}/{MAX_RETRIES})]")
+                        if on_retry is not None:
+                            on_retry(attempt + 1, delay, kind)
                         time.sleep(delay)
                         continue
                     raise ConnectionError(
@@ -76,13 +90,19 @@ class OllamaClient:
                 if kind == "timeout":
                     if attempt < MAX_RETRIES - 1:
                         delay = RETRY_DELAYS[attempt]
-                        print(f"[timeout, retrying in {delay}s... ({attempt + 1}/{MAX_RETRIES})]")
+                        if on_retry is not None:
+                            on_retry(attempt + 1, delay, kind)
                         time.sleep(delay)
                         continue
                 raise
         raise last_error  # type: ignore[misc]
 
-    def stream(self, messages: list[Message], tools: list[dict[str, Any]] | None = None) -> Iterator[str]:
+    def stream(
+        self,
+        messages: list[Message],
+        tools: list[dict[str, Any]] | None = None,
+        on_retry: RetryCallback | None = None,
+    ) -> Iterator[str]:
         """Stream text content chunks. Does not handle tool calls."""
         kwargs: dict[str, Any] = {
             "model": self.model,
@@ -92,7 +112,7 @@ class OllamaClient:
         if tools:
             kwargs["tools"] = tools
 
-        response_stream = self._call_with_retry(kwargs)
+        response_stream = self._call_with_retry(kwargs, on_retry=on_retry)
         for chunk in response_stream:
             content = chunk.get("message", {}).get("content", "")
             if content:
@@ -102,6 +122,7 @@ class OllamaClient:
         self,
         messages: list[Message],
         tools: list[dict[str, Any]] | None = None,
+        on_retry: RetryCallback | None = None,
     ) -> tuple[Message | None, Iterator[str] | None]:
         """Chat with tool-call detection.
 
@@ -109,15 +130,22 @@ class OllamaClient:
         (Message, None). If no tool calls (final text), returns (None, stream)
         where stream yields text chunks for live display.
         """
-        response = self.chat(messages, tools=tools)
+        response = self.chat(messages, tools=tools, on_retry=on_retry)
         if response.tool_calls:
             return response, None
 
-        # Final text response -- stream it for display
-        # We already have the text, so yield it directly
         def _chunks() -> Iterator[str]:
-            if response.content:
+            streamed_any = False
+            try:
+                for chunk in self.stream(messages, tools=tools, on_retry=on_retry):
+                    streamed_any = True
+                    yield chunk
+            except Exception:
+                pass
+
+            if not streamed_any and response.content:
                 yield response.content
+
         return None, _chunks()
 
     def _parse_response(self, response: Any) -> Message:

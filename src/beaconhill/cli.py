@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -9,10 +8,11 @@ from typing import Any
 from beaconhill.agent import MAX_ITERATIONS, build_system_prompt
 from beaconhill.client import OllamaClient
 from beaconhill.config import Config
-from beaconhill.context import compact_messages, estimate_tokens, needs_compaction
 from beaconhill.models import Message, Role
+from beaconhill.runtime import run_agentic_loop
 from beaconhill.session import DEFAULT_SESSION_DIR, Session
-from beaconhill.tools import Policy, create_default_registry
+from beaconhill.tools import create_default_registry
+from beaconhill import ui
 
 
 def parse_args() -> argparse.Namespace:
@@ -30,25 +30,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def format_tool_call(name: str, arguments: dict[str, Any]) -> str:
-    """Format a tool call for display to the user."""
-    args_str = json.dumps(arguments, indent=2, ensure_ascii=False)
-    return f"[tool] {name}\n{args_str}"
-
-
-def prompt_user_permission(name: str, arguments: dict[str, Any]) -> bool:
-    """Ask the user whether to allow a tool call. Returns True if allowed."""
-    print(f"\n{format_tool_call(name, arguments)}")
-    try:
-        answer = input("Allow? [y/N] ").strip().lower()
-    except (KeyboardInterrupt, EOFError):
-        print()
-        return False
-    return answer in ("y", "yes")
-
-
 def _resolve_session_path(ref: str, session_dir: Path | None = None) -> Path:
-    """Resolve a session reference (path or ID) to a file path."""
     p = Path(ref)
     if p.exists():
         return p
@@ -56,55 +38,45 @@ def _resolve_session_path(ref: str, session_dir: Path | None = None) -> Path:
     candidate = dir_ / f"{ref}.jsonl"
     if candidate.exists():
         return candidate
-    # Try partial match
     if dir_.exists():
         matches = sorted(dir_.glob(f"{ref}*.jsonl"))
         if len(matches) == 1:
             return matches[0]
         if len(matches) > 1:
-            print(f"Ambiguous session ID, matches: {[m.stem for m in matches]}")
+            ui.error(f"Ambiguous session ID, matches: {[m.stem for m in matches]}")
             sys.exit(1)
-    print(f"Session not found: {ref}")
+    ui.error(f"Session not found: {ref}")
     sys.exit(1)
 
 
 def _replay_session(path: Path) -> None:
-    """Display a past session read-only."""
     session = Session.load(path)
-    print(f"Replaying session: {session.meta.session_id}")
-    print(f"Created: {session.meta.created_at} | Model: {session.meta.model}")
-    print("-" * 60)
+    ui.replay_header(session.meta.session_id, session.meta.created_at, session.meta.model)
     for msg in session.messages:
         if msg.role == Role.SYSTEM:
             continue
         if msg.role == Role.USER:
-            print(f"\n>>> {msg.content}")
+            ui.replay_user(msg.content or "")
         elif msg.role == Role.ASSISTANT:
             if msg.tool_calls:
                 for tc in msg.tool_calls:
-                    print(f"[tool] {tc.name}: {_summarize_args(tc.arguments)}")
+                    ui.replay_tool(tc.name, ui.summarize_args(tc.arguments))
             if msg.content:
-                print(msg.content)
+                ui.replay_assistant(msg.content)
         elif msg.role == Role.TOOL:
-            # Show truncated tool output
-            content = msg.content or ""
-            if len(content) > 200:
-                content = content[:200] + "..."
-            print(f"  -> {content}")
-    print(f"\n{'─' * 60}")
-    print("(end of session)")
+            ui.replay_tool_output(msg.content or "")
+    ui.replay_footer()
 
 
 def main() -> None:
     args = parse_args()
 
-    # Load config: defaults < global < project < CLI args
     config = Config.load(project_dir=Path.cwd())
     config.apply_cli_overrides(args)
 
     session_dir = Path(config.session_dir) if config.session_dir else None
 
-    # Handle --replay (read-only, no Ollama needed)
+    # Replay mode (read-only, no Ollama needed)
     if args.replay:
         path = _resolve_session_path(args.replay, session_dir)
         _replay_session(path)
@@ -113,19 +85,17 @@ def main() -> None:
     client = OllamaClient(model=config.model, host=config.host)
     registry = create_default_registry()
 
-    # Handle --resume or new session
+    # Resume or new session
     if args.resume:
         path = _resolve_session_path(args.resume, session_dir)
         session = Session.load(path)
-        print(f"beaconhill v0.1.0 | model: {config.model}")
-        print(f"Resumed session: {session.meta.session_id}")
-        print(f"  {len(session.messages)} messages loaded")
-        print("Type /quit to exit.\n")
+        ui.banner(config.model, session.meta.session_id, resumed=True, msg_count=len(session.messages))
     else:
         session = Session(model=config.model, session_dir=session_dir)
-        print(f"beaconhill v0.1.0 | model: {config.model}")
-        print(f"session: {session.path}")
-        print("Type /quit to exit.\n")
+        if args.prompt:
+            ui.banner_oneshot(config.model)
+        else:
+            ui.banner(config.model, session.meta.session_id)
         system_msg = Message(role=Role.SYSTEM, content=build_system_prompt())
         session.append(system_msg)
 
@@ -136,38 +106,40 @@ def main() -> None:
         user_msg = Message(role=Role.USER, content=args.prompt)
         session.append(user_msg)
         try:
-            _run_agentic_loop(client, registry, session, tools, allow_all=config.allow_all)
+            _run_agentic_loop(client, registry, session, tools, config.allow_all, config.context_limit)
         except ConnectionError as e:
-            print(f"[error] {e}", file=sys.stderr)
+            ui.error(f"Beacon flickering. {e}")
             sys.exit(1)
         return
 
+    # Interactive REPL
     while True:
         try:
-            user_input = input(">>> ")
+            prompt_str = ui.amber(">>> ") if ui._use_color() else ">>> "
+            user_input = input(prompt_str)
         except (KeyboardInterrupt, EOFError):
-            print("\nGoodbye.")
+            ui.goodbye()
             break
 
         stripped = user_input.strip()
         if not stripped:
             continue
         if stripped in ("/quit", "/exit"):
-            print("Goodbye.")
+            ui.goodbye()
             break
         if stripped == "/session":
-            print(f"Session: {session.path}")
+            ui.info(f"Session: {session.path}")
             continue
 
         user_msg = Message(role=Role.USER, content=user_input)
         session.append(user_msg)
 
         try:
-            _run_agentic_loop(client, registry, session, tools, config.allow_all)
+            _run_agentic_loop(client, registry, session, tools, config.allow_all, config.context_limit)
         except ConnectionError as e:
-            print(f"\n[error] {e}")
+            ui.error(f"Beacon flickering. {e}")
         except KeyboardInterrupt:
-            print("\n[interrupted]")
+            ui.warning("Interrupted.")
 
 
 def _run_agentic_loop(
@@ -176,81 +148,16 @@ def _run_agentic_loop(
     session: Session,
     tools: list[dict[str, Any]],
     allow_all: bool,
+    context_limit: int = 32768,
 ) -> None:
-    """Run the agentic loop: LLM -> tool calls -> repeat until done."""
     from beaconhill.tools import ToolRegistry  # for type only
 
-    for _ in range(MAX_ITERATIONS):
-        # Compact if approaching context limit
-        if needs_compaction(session.messages, client=client):
-            print("[compacting context...]")
-            session.messages = compact_messages(session.messages, client)
-
-        response, text_stream = client.chat_or_stream(session.messages, tools=tools)
-
-        if text_stream is not None:
-            # Final text response -- stream to display
-            chunks: list[str] = []
-            for chunk in text_stream:
-                print(chunk, end="", flush=True)
-                chunks.append(chunk)
-            print()
-            full_text = "".join(chunks) or None
-            session.append(Message(role=Role.ASSISTANT, content=full_text))
-            return
-
-        # Tool-calling turn
-        session.append(response)
-
-        # Process tool calls
-        for tc in response.tool_calls:
-            policy = registry.check_permission(tc.name)
-
-            if policy == Policy.DENY:
-                print(f"[denied] {tc.name}")
-                tool_msg = Message(
-                    role=Role.TOOL,
-                    content="Permission denied",
-                    tool_call_id=tc.name,
-                )
-                session.append(tool_msg)
-                continue
-
-            if policy == Policy.ASK and not allow_all:
-                allowed = prompt_user_permission(tc.name, tc.arguments)
-                if not allowed:
-                    print(f"[denied by user] {tc.name}")
-                    tool_msg = Message(
-                        role=Role.TOOL,
-                        content="Permission denied by user",
-                        tool_call_id=tc.name,
-                    )
-                    session.append(tool_msg)
-                    continue
-            else:
-                # ALLOW or --allow-all: show what's running
-                print(f"[tool] {tc.name}: {_summarize_args(tc.arguments)}")
-
-            result = registry.execute(tc.name, tc.arguments)
-            if result.is_error:
-                print(f"[error] {result.output}")
-
-            tool_msg = Message(
-                role=Role.TOOL,
-                content=result.output,
-                tool_call_id=tc.name,
-            )
-            session.append(tool_msg)
-
-    print("[warning] Max iterations reached.")
-
-
-def _summarize_args(arguments: dict[str, Any]) -> str:
-    """One-line summary of tool arguments for display."""
-    if "command" in arguments:
-        return arguments["command"]
-    if "file_path" in arguments:
-        return arguments["file_path"]
-    if "pattern" in arguments:
-        return arguments["pattern"]
-    return json.dumps(arguments, ensure_ascii=False)
+    run_agentic_loop(
+        client=client,
+        registry=registry,
+        session=session,
+        tools=tools,
+        allow_all=allow_all,
+        context_limit=context_limit,
+        max_iterations=MAX_ITERATIONS,
+    )
