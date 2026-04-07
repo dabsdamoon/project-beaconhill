@@ -9,6 +9,7 @@ description = "Local-first coding agent harness for offline development"
 requires-python = ">=3.12"
 dependencies = [
     "ollama>=0.6.1",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
