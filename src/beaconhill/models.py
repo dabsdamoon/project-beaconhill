@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import base64
 import enum
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 
@@ -32,6 +34,7 @@ class Message:
     content: str | None = None
     tool_calls: list[ToolCall] | None = None
     tool_call_id: str | None = None
+    images: list[str] | None = None
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
@@ -42,6 +45,8 @@ class Message:
             d["tool_calls"] = [tc.to_dict() for tc in self.tool_calls]
         if self.tool_call_id is not None:
             d["tool_call_id"] = self.tool_call_id
+        if self.images is not None:
+            d["images"] = self.images
         return d
 
     @classmethod
@@ -54,11 +59,16 @@ class Message:
             content=d.get("content"),
             tool_calls=tool_calls,
             tool_call_id=d.get("tool_call_id"),
+            images=d.get("images"),
             timestamp=d.get("timestamp", ""),
         )
 
     def to_ollama(self) -> dict[str, Any]:
-        """Convert to the dict format expected by the ollama library."""
+        """Convert to the dict format expected by the ollama library.
+
+        Image paths are read and base64-encoded lazily here so that the
+        persisted session JSONL stays small and human-readable.
+        """
         d: dict[str, Any] = {"role": str(self.role)}
         if self.content is not None:
             d["content"] = self.content
@@ -67,4 +77,10 @@ class Message:
                 {"function": {"name": tc.name, "arguments": tc.arguments}}
                 for tc in self.tool_calls
             ]
+        if self.images:
+            encoded: list[str] = []
+            for path in self.images:
+                data = Path(path).expanduser().read_bytes()
+                encoded.append(base64.b64encode(data).decode("ascii"))
+            d["images"] = encoded
         return d

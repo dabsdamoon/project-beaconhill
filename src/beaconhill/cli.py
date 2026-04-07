@@ -27,7 +27,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resume", default=None, help="Session ID or path to resume")
     parser.add_argument("--replay", default=None, help="Session ID or path to replay (read-only)")
     parser.add_argument("--prompt", default=None, help="One-shot mode: run a single prompt and exit")
+    parser.add_argument(
+        "--image",
+        action="append",
+        default=None,
+        help="Attach an image file to the prompt (repeatable). Requires a vision-capable model.",
+    )
     return parser.parse_args()
+
+
+def _validate_image_paths(paths: list[str]) -> list[str]:
+    resolved: list[str] = []
+    for raw in paths:
+        p = Path(raw).expanduser()
+        if not p.exists() or not p.is_file():
+            ui.error(f"Image not found: {raw}")
+            sys.exit(1)
+        resolved.append(str(p))
+    return resolved
 
 
 def _resolve_session_path(ref: str, session_dir: Path | None = None) -> Path:
@@ -103,7 +120,8 @@ def main() -> None:
 
     # One-shot mode
     if args.prompt:
-        user_msg = Message(role=Role.USER, content=args.prompt)
+        images = _validate_image_paths(args.image) if args.image else None
+        user_msg = Message(role=Role.USER, content=args.prompt, images=images)
         session.append(user_msg)
         try:
             _run_agentic_loop(client, registry, session, tools, config.allow_all, config.context_limit)
@@ -113,6 +131,7 @@ def main() -> None:
         return
 
     # Interactive REPL
+    pending_images: list[str] = []
     while True:
         try:
             prompt_str = ui.amber(">>> ") if ui._use_color() else ">>> "
@@ -130,8 +149,29 @@ def main() -> None:
         if stripped == "/session":
             ui.info(f"Session: {session.path}")
             continue
+        if stripped.startswith("/img"):
+            parts = stripped.split(maxsplit=1)
+            if len(parts) == 1:
+                if pending_images:
+                    ui.info(f"Pending images: {pending_images}")
+                else:
+                    ui.info("Usage: /img <path>  (attaches an image to your next message)")
+                continue
+            path = Path(parts[1]).expanduser()
+            if not path.exists() or not path.is_file():
+                ui.error(f"Image not found: {parts[1]}")
+                continue
+            pending_images.append(str(path))
+            ui.info(f"Attached image ({len(pending_images)} pending): {path}")
+            continue
+        if stripped == "/clear-img":
+            pending_images.clear()
+            ui.info("Cleared pending images.")
+            continue
 
-        user_msg = Message(role=Role.USER, content=user_input)
+        images = pending_images.copy() if pending_images else None
+        pending_images.clear()
+        user_msg = Message(role=Role.USER, content=user_input, images=images)
         session.append(user_msg)
 
         try:

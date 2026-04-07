@@ -1,6 +1,6 @@
 # UI/UX Enhancement Plan
 
-Applies the brand identity from `docs/brand-identity.md` to the Beaconhill CLI.
+Applies the brand identity from `docs/reference/brand-identity.md` to the Beaconhill CLI.
 
 ## Current State
 

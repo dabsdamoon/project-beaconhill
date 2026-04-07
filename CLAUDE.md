@@ -13,7 +13,9 @@ Beaconhill is a local-first agent harness that enables developers to work with c
 
 ## Key Directories
 
-- `docs/` — Project plans, architecture, guides
+- `docs/design/` — Plans, architecture, sequence diagrams (forward-looking commitments)
+- `docs/reference/` — Stable how-to and lookup material (libraries, brand, models)
+- `docs/notes/` — Exploratory analyses and retrospectives (lower commitment)
 - `src/` — Agent harness source code (Python)
 - `tests/` — Test suite
 
