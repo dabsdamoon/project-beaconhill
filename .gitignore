@@ -24,3 +24,4 @@ evals/results/
 # temporary files
 tmp/
 .claude/*
+docs/notes*
