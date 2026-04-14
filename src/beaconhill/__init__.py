@@ -1,5 +1,13 @@
 __version__ = "0.1.0"
 
+from beaconhill.orchestrator import OrchestratorPhase, OrchestratorState
+from beaconhill.plan import (
+    EvaluationResult,
+    Plan,
+    PlanStep,
+    StepStatus,
+    StepVerdict,
+)
 from beaconhill.state import (
     AppMode,
     AppState,
@@ -15,8 +23,15 @@ __all__ = [
     "__version__",
     "AppMode",
     "AppState",
+    "EvaluationResult",
     "EventType",
+    "OrchestratorPhase",
+    "OrchestratorState",
+    "Plan",
+    "PlanStep",
     "RuntimeEvent",
+    "StepStatus",
+    "StepVerdict",
     "ToolExecutionState",
     "ToolStatus",
     "TurnPhase",
