@@ -141,3 +141,29 @@ class EvaluationResult:
 
     def failed_step_ids(self) -> list[int]:
         return [v.step_id for v in self.verdicts if not v.passed]
+
+
+@dataclass
+class StepEvidence:
+    """Observable traces of a single step's execution, collected for the evaluator."""
+    step_id: int
+    tool_calls: list[str] = field(default_factory=list)
+    files_touched: list[str] = field(default_factory=list)
+    assistant_text: str = ""
+
+    def to_prompt(self) -> str:
+        lines = [f"### Step {self.step_id} evidence"]
+        if self.tool_calls:
+            lines.append("Tool calls:")
+            for tc in self.tool_calls:
+                lines.append(f"  - {tc}")
+        else:
+            lines.append("Tool calls: (none)")
+        if self.files_touched:
+            lines.append(f"Files touched: {', '.join(self.files_touched)}")
+        if self.assistant_text:
+            snippet = self.assistant_text.strip()
+            if len(snippet) > 500:
+                snippet = snippet[:500] + "..."
+            lines.append(f"Final assistant text: {snippet}")
+        return "\n".join(lines)

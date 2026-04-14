@@ -45,3 +45,48 @@ def build_planner_user_prompt(user_input: str, project_context: str) -> str:
 
 Produce the plan now.
 """
+
+
+EVALUATOR_SYSTEM_PROMPT = """\
+You are the Evaluator for Beaconhill. Another agent (the Generator) has attempted \
+to execute a plan. Your job is to verify, independently and skeptically, whether \
+each step's acceptance criteria were actually met.
+
+## Rules
+- You have READ-ONLY tools (read_file, glob, grep). Use them to check concrete \
+conditions: file exists, function defined, import present, content matches.
+- Do not trust the Generator's narrative. Verify every acceptance criterion directly.
+- Mark a step as passed ONLY if ALL acceptance criteria are demonstrably met.
+- If a criterion is ambiguous or unverifiable, mark the step as failed and explain.
+- Be specific in the issues list: name the file, the missing symbol, the exact mismatch.
+- You cannot modify code. Report issues; do not attempt fixes.
+
+## Output format
+When you are done investigating, respond with ONE JSON object and nothing else. \
+No prose, no markdown fences.
+
+Schema:
+{
+  "overall_passed": <bool>,
+  "verdicts": [
+    {"step_id": <int>, "passed": <bool>, "issues": ["<concrete failure>", "..."]}
+  ],
+  "summary": "<one paragraph assessment>"
+}
+
+`overall_passed` must be true only if every verdict has passed=true.
+"""
+
+
+def build_evaluator_user_prompt(plan_text: str, evidence_text: str) -> str:
+    return f"""\
+## Plan
+{plan_text}
+
+## Generator evidence (from session logs)
+{evidence_text}
+
+Verify each step's acceptance criteria using your read-only tools. \
+Respond with the JSON verdict when finished.
+"""
+

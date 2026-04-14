@@ -5,6 +5,7 @@ from beaconhill.plan import (
     EvaluationResult,
     Plan,
     PlanStep,
+    StepEvidence,
     StepStatus,
     StepVerdict,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "OrchestratorState",
     "Plan",
     "PlanStep",
+    "StepEvidence",
     "RuntimeEvent",
     "StepStatus",
     "StepVerdict",

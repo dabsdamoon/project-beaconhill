@@ -53,6 +53,7 @@ class TestRunOrchestratedHappyPath:
                 context_limit=4096,
                 user_input="Add a greet function",
                 interactive=True,
+                skip_evaluation=True,
             )
 
         assert state.phase == OrchestratorPhase.COMPLETE
@@ -85,6 +86,7 @@ class TestRunOrchestratedHappyPath:
                 context_limit=4096,
                 user_input="do two things",
                 interactive=True,
+                skip_evaluation=True,
             )
 
         assert state.phase == OrchestratorPhase.COMPLETE
@@ -115,6 +117,7 @@ class TestRunOrchestratedHappyPath:
                 context_limit=4096,
                 user_input="do two things",
                 interactive=False,
+                skip_evaluation=True,
             )
 
         assert state.phase == OrchestratorPhase.COMPLETE
@@ -147,6 +150,7 @@ class TestRunOrchestratedRejection:
                 context_limit=4096,
                 user_input="do two things",
                 interactive=True,
+                skip_evaluation=True,
             )
 
         assert state.phase == OrchestratorPhase.FAILED
@@ -177,6 +181,7 @@ class TestEventEmission:
                 user_input="do it",
                 interactive=False,
                 on_event=events.append,
+                skip_evaluation=True,
             )
 
         types = [e.type for e in events]
@@ -209,6 +214,7 @@ class TestStepFailure:
                     context_limit=4096,
                     user_input="do it",
                     interactive=False,
+                    skip_evaluation=True,
                 )
 
         assert session.plan is not None
@@ -234,6 +240,7 @@ class TestSessionPersistence:
                 context_limit=4096,
                 user_input="do it",
                 interactive=False,
+                skip_evaluation=True,
             )
 
         loaded = Session.load(session.path)
@@ -267,6 +274,7 @@ class TestSessionPersistence:
                 context_limit=4096,
                 user_input="do it",
                 interactive=False,
+                skip_evaluation=True,
             )
 
         user_msgs = [m for m in session.messages if m.role == Role.USER]
