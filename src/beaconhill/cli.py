@@ -7,7 +7,7 @@ from typing import Any
 
 from beaconhill.agent import MAX_ITERATIONS, build_system_prompt
 from beaconhill.client import OllamaClient
-from beaconhill.config import Config
+from beaconhill.config import Config, PLAN_MODE_NEVER, VALID_PLAN_MODES, should_plan
 from beaconhill.models import Message, Role
 from beaconhill.orchestrator import run_orchestrated
 from beaconhill.runtime import run_agentic_loop
@@ -37,7 +37,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--plan",
         action="store_true",
-        help="Run in orchestrated plan-generate mode: produce a plan before executing.",
+        help="Force orchestrated plan-generate mode for this run (shorthand for --plan-mode always).",
+    )
+    parser.add_argument(
+        "--plan-mode",
+        choices=list(VALID_PLAN_MODES),
+        default=None,
+        help="When to use orchestrated planning: always, never, or auto (heuristic).",
     )
     return parser.parse_args()
 
@@ -127,7 +133,7 @@ def main() -> None:
     # One-shot mode
     if args.prompt:
         images = _validate_image_paths(args.image) if args.image else None
-        if args.plan:
+        if should_plan(args.prompt, config.plan_mode):
             try:
                 run_orchestrated(
                     client=client,
@@ -138,6 +144,7 @@ def main() -> None:
                     context_limit=config.context_limit,
                     user_input=args.prompt,
                     interactive=False,
+                    max_eval_iterations=config.max_eval_iterations,
                 )
             except ConnectionError as e:
                 ui.error(f"Beacon flickering. {e}")
@@ -200,7 +207,11 @@ def main() -> None:
         images = pending_images.copy() if pending_images else None
         pending_images.clear()
 
-        if plan_next_turn:
+        use_plan = plan_next_turn or (
+            config.plan_mode != PLAN_MODE_NEVER
+            and should_plan(user_input, config.plan_mode)
+        )
+        if use_plan:
             plan_next_turn = False
             try:
                 run_orchestrated(
@@ -211,7 +222,8 @@ def main() -> None:
                     allow_all=config.allow_all,
                     context_limit=config.context_limit,
                     user_input=user_input,
-                    interactive=True,
+                    interactive=config.plan_approval,
+                    max_eval_iterations=config.max_eval_iterations,
                 )
             except ConnectionError as e:
                 ui.error(f"Beacon flickering. {e}")

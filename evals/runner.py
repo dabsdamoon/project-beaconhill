@@ -27,12 +27,14 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from beaconhill.agent import run_agent_turn
 from beaconhill.client import OllamaClient
+from beaconhill.orchestrator import run_orchestrated
+from beaconhill.session import Session
 from beaconhill.tools import create_default_registry
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
-DEFAULT_THRESHOLDS = {"t1": 90, "t2": 70, "t3": 50}
+DEFAULT_THRESHOLDS = {"t1": 90, "t2": 70, "t3": 50, "t4": 40}
 
 
 @dataclass
@@ -43,6 +45,13 @@ class CaseResult:
     duration: float
     error: str | None = None
     agent_response: str = ""
+
+
+def _last_assistant_text(messages: list) -> str:
+    for m in reversed(messages):
+        if str(m.role) == "assistant" and m.content:
+            return m.content
+    return ""
 
 
 def discover_fixtures(tier: int | None = None) -> list[Path]:
@@ -94,7 +103,22 @@ def run_fixture(fixture: Path, client: OllamaClient) -> CaseResult:
         try:
             os.chdir(work_dir)
             registry = create_default_registry()
-            messages, response = run_agent_turn(prompt, client, registry)
+            if tier >= 4:
+                session = Session(model=client.model, session_dir=work_dir)
+                run_orchestrated(
+                    client=client,
+                    registry=registry,
+                    session=session,
+                    tools=registry.to_ollama(),
+                    allow_all=True,
+                    context_limit=32768,
+                    user_input=prompt,
+                    interactive=False,
+                )
+                messages = session.messages
+                response = _last_assistant_text(session.messages)
+            else:
+                messages, response = run_agent_turn(prompt, client, registry)
         except Exception as e:
             return CaseResult(
                 fixture=fixture.name, tier=tier, passed=False,
@@ -219,7 +243,7 @@ def write_report(results: list[CaseResult], thresholds: dict[str, int], path: Pa
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Beaconhill eval runner")
-    parser.add_argument("--tier", type=int, help="Run only this tier (1, 2, or 3)")
+    parser.add_argument("--tier", type=int, help="Run only this tier (1-4)")
     parser.add_argument("--threshold", type=str, help="Override thresholds (e.g., t1=80,t2=60)")
     parser.add_argument("--report", type=str, help="Path to write JSON report")
     parser.add_argument("--model", default="gemma4:26b", help="Ollama model name")

@@ -1,0 +1,31 @@
+{
+  "goal": "Add snake_to_camel with tests and verify via pytest",
+  "steps": [
+    {
+      "id": 1,
+      "description": "Create strings.py exporting snake_to_camel(s).",
+      "acceptance_criteria": [
+        "strings.py exists",
+        "snake_to_camel is defined"
+      ],
+      "files": ["strings.py"]
+    },
+    {
+      "id": 2,
+      "description": "Create test_strings.py with at least three test cases.",
+      "acceptance_criteria": [
+        "test_strings.py exists",
+        "contains at least three assert statements"
+      ],
+      "files": ["test_strings.py"]
+    },
+    {
+      "id": 3,
+      "description": "Run pytest and confirm the tests pass.",
+      "acceptance_criteria": [
+        "pytest exit code is 0"
+      ],
+      "files": []
+    }
+  ]
+}
