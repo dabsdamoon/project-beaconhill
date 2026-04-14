@@ -5,9 +5,13 @@ import os
 import sys
 import threading
 import time
-from typing import Any
+from typing import Any, Literal
 from rich.console import Console
 from rich.markdown import Markdown
+
+from beaconhill.plan import Plan
+
+PlanApproval = Literal["approve", "reject", "edit"]
 
 _console = Console()
 
@@ -200,6 +204,35 @@ class ThinkingPulse:
             sys.stdout.flush()
             idx = (idx + 1) % len(frames)
             self._stop_event.wait(0.3)
+
+
+def display_plan(plan: Plan) -> None:
+    header = f"--- plan: {plan.goal} "
+    header = header.ljust(TRAY_WIDTH, "-")
+    print()
+    print(amber(header))
+    for step in plan.steps:
+        print(f"  {bold(f'Step {step.id}:')} {step.description}")
+        if step.files:
+            print(f"    {grey('files:')} {', '.join(step.files)}")
+        for criterion in step.acceptance_criteria:
+            print(f"    {grey('-')} {criterion}")
+    print(grey("-" * TRAY_WIDTH))
+
+
+def plan_approval_prompt() -> PlanApproval:
+    try:
+        answer = input(
+            f"  Approve plan? {grey('[y=approve / n=reject / e=edit]')} "
+        ).strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        print()
+        return "reject"
+    if answer in ("y", "yes", ""):
+        return "approve"
+    if answer in ("e", "edit"):
+        return "edit"
+    return "reject"
 
 
 def summarize_args(arguments: dict[str, Any]) -> str:
