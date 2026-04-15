@@ -51,7 +51,7 @@ class Config:
     max_eval_iterations: int = 3
     plan_approval: bool = True
     evaluator_tools: list[str] = field(
-        default_factory=lambda: ["read_file", "glob", "grep"]
+        default_factory=lambda: ["read_file", "glob", "grep", "bash"]
     )
 
     @classmethod

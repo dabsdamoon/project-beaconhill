@@ -27,7 +27,10 @@ def create_plan(
         ),
     ]
 
-    response = client.chat(messages)
+    # Note: format="json" was tried and found to degenerate with gemma4:26b on
+    # longer prompts -- output loops into `/the/the/the/...`. Plain chat with
+    # a strict prompt + the robust JSON extractor is more reliable.
+    response = client.chat(messages, options={"temperature": 0.2})
     text = response.content or ""
 
     plan = _parse_plan(text)

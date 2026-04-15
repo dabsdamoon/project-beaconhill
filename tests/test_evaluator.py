@@ -34,20 +34,30 @@ def _plan(step_ids: list[int]) -> Plan:
 
 
 class TestCreateEvaluatorRegistry:
-    def test_denies_write_and_execute(self):
+    def test_write_tools_never_registered(self):
+        base = create_default_registry()
+        readonly = create_evaluator_registry(base)
+        names = {s.name for s in readonly.list_specs()}
+        assert "write_file" not in names
+        assert "edit_file" not in names
+        # Unregistered tools are implicitly denied.
+        assert readonly.check_permission("write_file") == Policy.DENY
+        assert readonly.check_permission("edit_file") == Policy.DENY
+
+    def test_read_and_bash_allowed(self):
         base = create_default_registry()
         readonly = create_evaluator_registry(base)
         assert readonly.check_permission("read_file") == Policy.ALLOW
         assert readonly.check_permission("glob") == Policy.ALLOW
         assert readonly.check_permission("grep") == Policy.ALLOW
-        assert readonly.check_permission("write_file") == Policy.DENY
-        assert readonly.check_permission("edit_file") == Policy.DENY
-        assert readonly.check_permission("bash") == Policy.DENY
+        # bash is EXECUTE — allowed so evaluator can run grep/test/pytest.
+        assert readonly.check_permission("bash") == Policy.ALLOW
 
-    def test_shares_tool_specs(self):
+    def test_allow_list_filters_tools(self):
         base = create_default_registry()
-        readonly = create_evaluator_registry(base)
-        assert {s.name for s in readonly.list_specs()} == {s.name for s in base.list_specs()}
+        readonly = create_evaluator_registry(base, allowed_names=["read_file", "grep"])
+        names = {s.name for s in readonly.list_specs()}
+        assert names == {"read_file", "grep"}
 
 
 class TestParseEvaluation:

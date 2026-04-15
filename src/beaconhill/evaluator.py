@@ -12,16 +12,27 @@ from beaconhill.tools import Permission, Policy, ToolRegistry
 MAX_EVALUATOR_ITERATIONS = 20
 
 
-def create_evaluator_registry(base: ToolRegistry) -> ToolRegistry:
-    """Return a registry sharing `base`'s tools but with read-only policies."""
+def create_evaluator_registry(
+    base: ToolRegistry, allowed_names: list[str] | None = None
+) -> ToolRegistry:
+    """Return a registry with a read-only-safe policy and (optionally) a tool allow-list.
+
+    WRITE tools are always denied. EXECUTE is allowed (bash is trusted to be used
+    for read-only checks via the evaluator prompt). READ is allowed.
+    When `allowed_names` is provided, only those tools are registered.
+    """
     restricted = ToolRegistry(
         policies={
             Permission.READ: Policy.ALLOW,
             Permission.WRITE: Policy.DENY,
-            Permission.EXECUTE: Policy.DENY,
+            Permission.EXECUTE: Policy.ALLOW,
         }
     )
     for spec in base.list_specs():
+        if allowed_names is not None and spec.name not in allowed_names:
+            continue
+        if spec.required_permission == Permission.WRITE:
+            continue  # never register write tools for the evaluator
         restricted.register(spec)
     return restricted
 
@@ -32,6 +43,7 @@ def evaluate(
     evidence: list[StepEvidence],
     base_registry: ToolRegistry,
     *,
+    allowed_tools: list[str] | None = None,
     iteration: int = 0,
     max_iterations: int = MAX_EVALUATOR_ITERATIONS,
 ) -> EvaluationResult:
@@ -41,7 +53,7 @@ def evaluate(
     exceeded iterations, returns a failing verdict with a descriptive summary
     so the orchestrator can decide how to proceed.
     """
-    registry = create_evaluator_registry(base_registry)
+    registry = create_evaluator_registry(base_registry, allowed_names=allowed_tools)
     tools = registry.to_ollama()
 
     evidence_text = "\n\n".join(e.to_prompt() for e in evidence) or "(no evidence)"

@@ -50,6 +50,8 @@ class OllamaClient:
         messages: list[Message],
         tools: list[dict[str, Any]] | None = None,
         on_retry: RetryCallback | None = None,
+        format: str | dict[str, Any] | None = None,
+        options: dict[str, Any] | None = None,
     ) -> Message:
         kwargs: dict[str, Any] = {
             "model": self.model,
@@ -57,6 +59,10 @@ class OllamaClient:
         }
         if tools:
             kwargs["tools"] = tools
+        if format is not None:
+            kwargs["format"] = format
+        if options is not None:
+            kwargs["options"] = options
 
         response = self._call_with_retry(kwargs, on_retry=on_retry)
         return self._parse_response(response)

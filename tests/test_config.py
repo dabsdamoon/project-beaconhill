@@ -24,7 +24,7 @@ class TestConfigDefaults:
         assert config.plan_mode == PLAN_MODE_AUTO
         assert config.max_eval_iterations == 3
         assert config.plan_approval is True
-        assert config.evaluator_tools == ["read_file", "glob", "grep"]
+        assert config.evaluator_tools == ["read_file", "glob", "grep", "bash"]
 
 
 class TestConfigLoad:

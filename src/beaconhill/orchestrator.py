@@ -49,6 +49,7 @@ def run_orchestrated(
     project_context: str = "",
     generator_max_iterations: int = 50,
     max_eval_iterations: int = 3,
+    evaluator_tools: list[str] | None = None,
     skip_evaluation: bool = False,
     on_event: EventSink | None = None,
 ) -> OrchestratorState:
@@ -98,7 +99,14 @@ def run_orchestrated(
         _emit(on_event, EventType.EVALUATION_STARTED, iteration=iteration)
 
         evidence = collect_evidence(session.messages, plan)
-        result = evaluate(client, plan, evidence, registry, iteration=iteration)
+        result = evaluate(
+            client,
+            plan,
+            evidence,
+            registry,
+            allowed_tools=evaluator_tools,
+            iteration=iteration,
+        )
         state.evaluation_results.append(result)
         session.add_evaluation(result)
         _emit(

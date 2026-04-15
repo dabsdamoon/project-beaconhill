@@ -145,6 +145,7 @@ def main() -> None:
                     user_input=args.prompt,
                     interactive=False,
                     max_eval_iterations=config.max_eval_iterations,
+                    evaluator_tools=config.evaluator_tools,
                 )
             except ConnectionError as e:
                 ui.error(f"Beacon flickering. {e}")
@@ -224,6 +225,7 @@ def main() -> None:
                     user_input=user_input,
                     interactive=config.plan_approval,
                     max_eval_iterations=config.max_eval_iterations,
+                    evaluator_tools=config.evaluator_tools,
                 )
             except ConnectionError as e:
                 ui.error(f"Beacon flickering. {e}")
