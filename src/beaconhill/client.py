@@ -18,9 +18,10 @@ RETRY_DELAYS = [2, 5, 10]
 TIMEOUT_MAX_ATTEMPTS = 2
 TIMEOUT_RETRY_DELAY = 30
 
-# Per-request timeout in seconds. 600s accommodates long Gemma generations
-# while still bounding the worst-case wait when Ollama hangs.
-DEFAULT_REQUEST_TIMEOUT = 600
+# Per-request timeout in seconds. 120s is tight enough to surface a wedged
+# Ollama within minutes, and most legitimate Gemma calls on this stack
+# (planner, generator step, evaluator) complete well under it.
+DEFAULT_REQUEST_TIMEOUT = 120
 
 
 class LLMClient(Protocol):
