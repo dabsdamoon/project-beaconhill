@@ -8,6 +8,7 @@ import pytest
 from beaconhill.models import Message, Role
 from beaconhill.orchestrator import (
     OrchestratorPhase,
+    _delete_step_artifacts,
     _persistent_failures,
     run_orchestrated,
 )
@@ -275,6 +276,42 @@ class TestPersistentFailures:
         assert _persistent_failures(hist, 1) == []
 
 
+class TestDeleteStepArtifacts:
+    def test_removes_existing_files(self, tmp_path: Path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "a.html").write_text("<html></html>")
+        (tmp_path / "b.css").write_text("body{}")
+        step = PlanStep(
+            id=1, description="x", acceptance_criteria=["c"],
+            files=["a.html", "b.css"],
+        )
+        removed = _delete_step_artifacts(step)
+        assert sorted(removed) == ["a.html", "b.css"]
+        assert not (tmp_path / "a.html").exists()
+        assert not (tmp_path / "b.css").exists()
+
+    def test_skips_missing(self, tmp_path: Path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        step = PlanStep(
+            id=1, description="x", acceptance_criteria=["c"],
+            files=["does_not_exist.html"],
+        )
+        assert _delete_step_artifacts(step) == []
+
+    def test_skips_directories(self, tmp_path: Path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "src").mkdir()
+        step = PlanStep(
+            id=1, description="x", acceptance_criteria=["c"], files=["src"],
+        )
+        assert _delete_step_artifacts(step) == []
+        assert (tmp_path / "src").exists()
+
+    def test_empty_files_list(self):
+        step = PlanStep(id=1, description="x", acceptance_criteria=["c"])
+        assert _delete_step_artifacts(step) == []
+
+
 class TestOrchestratorPivotFlow:
     def _plan_payload(self) -> str:
         return json.dumps(
@@ -283,6 +320,70 @@ class TestOrchestratorPivotFlow:
                 "steps": [{"id": 1, "description": "a", "acceptance_criteria": ["c"]}],
             }
         )
+
+    def test_pivot_deletes_step_files_and_emits_event(self, tmp_path: Path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        # Pre-create an artifact so deletion has something to remove.
+        (tmp_path / "thing.html").write_text("stale content")
+
+        plan_payload = json.dumps(
+            {
+                "goal": "g",
+                "steps": [
+                    {
+                        "id": 1,
+                        "description": "a",
+                        "acceptance_criteria": ["c"],
+                        "files": ["thing.html"],
+                    }
+                ],
+            }
+        )
+        fail_eval = json.dumps(
+            {
+                "overall_passed": False,
+                "verdicts": [{"step_id": 1, "passed": False, "issues": ["bad"]}],
+                "summary": "",
+            }
+        )
+        pass_eval = json.dumps(
+            {
+                "overall_passed": True,
+                "verdicts": [{"step_id": 1, "passed": True, "issues": []}],
+                "summary": "ok",
+            }
+        )
+        client = MagicMock()
+        client.chat.side_effect = [
+            Message(role=Role.ASSISTANT, content=plan_payload),
+            Message(role=Role.ASSISTANT, content=fail_eval),
+            Message(role=Role.ASSISTANT, content=fail_eval),
+            Message(role=Role.ASSISTANT, content=pass_eval),
+        ]
+        registry = MagicMock()
+        session = Session(model="test", session_dir=tmp_path / "sessions")
+
+        events = []
+        with patch("beaconhill.orchestrator.run_agentic_loop"):
+            run_orchestrated(
+                client=client,
+                registry=registry,
+                session=session,
+                tools=[],
+                allow_all=True,
+                context_limit=4096,
+                user_input="do it",
+                interactive=False,
+                max_eval_iterations=5,
+                on_event=events.append,
+            )
+
+        # File should have been deleted by the pivot path.
+        assert not (tmp_path / "thing.html").exists()
+        pivot_events = [e for e in events if e.type == EventType.PIVOT_TRIGGERED]
+        assert len(pivot_events) == 1
+        assert pivot_events[0].payload["step_id"] == 1
+        assert pivot_events[0].payload["removed_files"] == ["thing.html"]
 
     def test_pivot_prompt_emitted_after_two_same_failures(self, tmp_path: Path):
         plan_payload = self._plan_payload()

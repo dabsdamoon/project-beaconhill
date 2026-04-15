@@ -54,6 +54,7 @@ class EventType(str, Enum):
     EVALUATION_STARTED = "evaluation_started"
     EVALUATION_COMPLETED = "evaluation_completed"
     ORCHESTRATOR_RETRY = "orchestrator_retry"
+    PIVOT_TRIGGERED = "pivot_triggered"
 
 
 @dataclass

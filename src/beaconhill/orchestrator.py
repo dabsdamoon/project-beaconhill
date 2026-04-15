@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from beaconhill import ui
@@ -196,6 +197,17 @@ def _generate_steps(
             _persistent_failures(evaluation_history, step.id)
             if evaluation_history else []
         )
+        if persistent:
+            removed = _delete_step_artifacts(step)
+            _emit(
+                on_event,
+                EventType.PIVOT_TRIGGERED,
+                step_id=step.id,
+                persistent_issues=persistent,
+                removed_files=removed,
+            )
+            if removed:
+                ui.info(f"Pivot on step {step.id}: removed {len(removed)} prior file(s)")
         step_prompt = _build_step_prompt(
             step, plan, feedback=feedback, persistent_issues=persistent
         )
@@ -271,6 +283,25 @@ def _build_step_prompt(
         "Complete this step now. Stay within its scope -- do not work on other steps."
     )
     return "\n".join(lines)
+
+
+def _delete_step_artifacts(step: PlanStep) -> list[str]:
+    """Remove the files this step claimed to produce, so the next attempt starts clean.
+
+    Returns the list of paths actually removed. Missing files are silently skipped.
+    Only deletes files (never directories) and never recurses. Paths are interpreted
+    relative to the current working directory, which is the workspace.
+    """
+    removed: list[str] = []
+    for f in step.files:
+        path = Path(f)
+        if path.exists() and path.is_file():
+            try:
+                path.unlink()
+                removed.append(str(path))
+            except OSError:
+                pass
+    return removed
 
 
 def _emit(on_event: EventSink | None, event_type: EventType, **payload: object) -> None:
