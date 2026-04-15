@@ -1,19 +1,36 @@
 #!/bin/bash
-# One-off: run only the harness branch (3 runs). Used after partial A/B runs
-# where the harness portion was interrupted and main runs are kept.
+# Run only the harness branch inside an existing run folder.
+# Use when run.sh was interrupted after the main runs completed.
+#
+# Usage: bash ab_test/run_harness_only.sh <run_id> [N]
+#   run_id = folder name under ab_test/results/ (e.g. 20260415T134500-3de6081)
+#   N      = number of runs (default 3)
+
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AB_DIR="$ROOT/ab_test"
 PROMPT_FILE="$AB_DIR/prompt.md"
 RESULTS="$AB_DIR/results"
-N="${1:-3}"
-MODEL="${BEACONHILL_MODEL:-gemma4:26b}"
 
+if [[ $# -lt 1 ]]; then
+    echo "usage: $0 <run_id> [N]" >&2
+    exit 2
+fi
+
+RUN_ID="$1"
+N="${2:-3}"
+RUN_DIR="$RESULTS/$RUN_ID"
+if [[ ! -d "$RUN_DIR" ]]; then
+    echo "run-dir not found: $RUN_DIR" >&2
+    exit 1
+fi
+
+MODEL="${BEACONHILL_MODEL:-gemma4:26b}"
 WT="$ROOT"  # harness branch is checked out at ROOT
 
 for run in $(seq 1 "$N"); do
-    out="$RESULTS/harness/run-$run"
+    out="$RUN_DIR/harness/run-$run"
     mkdir -p "$out"
     echo "[run] harness run-$run"
 
@@ -38,5 +55,7 @@ for run in $(seq 1 "$N"); do
     fi
 done
 
+python3 "$AB_DIR/run_meta.py" finish --results-dir "$RESULTS" --run-id "$RUN_ID"
+
 echo ""
-echo "Harness runs complete: $RESULTS/harness/"
+echo "Harness runs complete: $RUN_DIR/harness/"

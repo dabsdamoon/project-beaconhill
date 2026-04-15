@@ -71,28 +71,37 @@ acceptance criteria were actually met.
 
 ## Mandatory verification protocol
 
-You MUST use your read-only tools before emitting a verdict. A verdict with no \
-tool calls is invalid -- you will be rejected.
+For every step, in this exact order:
 
-For every step, before deciding pass/fail:
+1. **Write tests before looking at the generator's code.** For each testable \
+acceptance criterion (file exists, string present, function defined, test passes, \
+exit code 0, computed value matches), invoke `bash` to run a direct assertion. \
+Examples:
+   - `test -f timer.html && echo OK`
+   - `grep -c '#58a6ff' timer.html`
+   - `python3 -c 'import pathlib,re; t=pathlib.Path("timer.html").read_text(); \
+assert re.search(r"border-radius\\s*:\\s*[8-9]|[1-9]\\d+px", t), "radius<8px"'`
+   - `python3 -m pytest test_module.py -q`
+   For a multi-assertion check, use a heredoc to write a test file and run it:
+   `bash <<'EOF'\ncat > /tmp/check.py <<'PY'\n<test code>\nPY\npython3 /tmp/check.py\nEOF`
 
-1. Use `read_file` on each file the step claims to touch. Confirm it exists and \
-inspect contents.
-2. For each acceptance criterion that names a literal string, identifier, color, \
-filename, import, or symbol, use `grep` to confirm that literal is present \
-(or `bash grep -c '<literal>' <file>`).
-3. If a criterion says "test passes" or "runs successfully," use `bash` to \
-invoke the test command (e.g. `python -m pytest <file>`) and check the exit code.
-4. Only AFTER you have concrete evidence from tools, emit the JSON verdict.
+2. **Inspect the file only if tests need context.** Use `read_file` or `grep` to \
+confirm what tests reported, or to judge criteria that cannot be tested (overall \
+structure, aesthetic consistency, no typos near required literals).
+
+3. **Emit the verdict.** A verdict with zero `bash`/`read_file`/`grep` calls is \
+invalid. Each `passed: true` must be justified by concrete tool output.
 
 ## Rejection rules (strict)
 
+- If an inline test command exits non-zero or its assertion fails, the covered \
+criterion FAILS.
 - If ANY required literal named in an acceptance criterion is not found by grep, \
-the step FAILS. No interpretation, no "probably equivalent." Exact match or fail.
+the step FAILS. Exact match or fail -- no "probably equivalent."
 - If a file the step claims to touch does not exist, the step FAILS.
-- If you cannot verify a criterion with tools, the step FAILS with the issue \
-"unable to verify via tools".
-- "Looks reasonable" is NOT sufficient. Every pass must cite specific tool output.
+- If you cannot test or verify a criterion with tools, the step FAILS with the \
+issue "unable to verify".
+- "Looks reasonable" is NOT sufficient.
 
 ## Output format
 
@@ -104,11 +113,13 @@ no markdown fences.
   "verdicts": [
     {"step_id": <int>, "passed": <bool>, "issues": ["<concrete failure>", "..."]}
   ],
-  "summary": "<one paragraph assessment that references specific tool findings>"
+  "summary": "<one paragraph assessment that cites specific tool findings>"
 }
 
 `overall_passed` is true only if every verdict has passed=true. Issues must name \
-the specific file, literal, or command that failed -- no generalities.
+the specific file, literal, test command, or failed assertion -- no generalities. \
+Prefer short, stable issue phrasing so repeated failures across iterations are \
+recognizable (e.g. `color_background: #0d1117 not found in timer.html`).
 """
 
 

@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""Assemble blinded pairwise judge packets.
+"""Assemble blinded pairwise judge packets for a specific run folder.
 
-For each run index i in [1..N], pair `main/run-i` vs `harness/run-i`. Randomize
-whether the main output is shown as A or B, and save the mapping separately so
-the reporter can un-blind scores later.
+For each run index i, pairs `main/run-i` vs `harness/run-i` with randomized
+A/B labelling. Saves the mapping separately so the reporter can un-blind.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import random
+import sys
 from pathlib import Path
 
 AB_DIR = Path(__file__).resolve().parent
-RESULTS = AB_DIR / "results"
+sys.path.insert(0, str(AB_DIR))
+from _run_dir import resolve_run_dir  # noqa: E402
+
+RESULTS_ROOT = AB_DIR / "results"
 PROMPT = (AB_DIR / "prompt.md").read_text()
 
 TEMPLATE = """\
@@ -55,12 +59,12 @@ Respond with a single JSON object matching this schema:
 """
 
 
-def build_packet() -> tuple[str, list[dict]]:
+def build_packet(run_dir: Path) -> tuple[str, list[dict]]:
     pairs: list[dict] = []
     pair_md_chunks: list[str] = []
 
-    main_runs = sorted((RESULTS / "main").glob("run-*")) if (RESULTS / "main").exists() else []
-    harness_runs = sorted((RESULTS / "harness").glob("run-*")) if (RESULTS / "harness").exists() else []
+    main_runs = sorted((run_dir / "main").glob("run-*")) if (run_dir / "main").exists() else []
+    harness_runs = sorted((run_dir / "harness").glob("run-*")) if (run_dir / "harness").exists() else []
 
     rng = random.Random(42)
     for i, (m, h) in enumerate(zip(main_runs, harness_runs), start=1):
@@ -96,12 +100,17 @@ def build_packet() -> tuple[str, list[dict]]:
 
 
 def main() -> None:
-    packet, mapping = build_packet()
-    (RESULTS / "judge_packet.md").write_text(packet)
-    (RESULTS / "judge_mapping.json").write_text(json.dumps(mapping, indent=2) + "\n")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run-dir", default=None, help="Specific run folder; default: latest")
+    args = ap.parse_args()
+    run_dir = resolve_run_dir(RESULTS_ROOT, args.run_dir)
+
+    packet, mapping = build_packet(run_dir)
+    (run_dir / "judge_packet.md").write_text(packet)
+    (run_dir / "judge_mapping.json").write_text(json.dumps(mapping, indent=2) + "\n")
     print(f"Wrote judge packet with {len(mapping)} pair(s).")
-    print(f"  {RESULTS / 'judge_packet.md'}")
-    print(f"  {RESULTS / 'judge_mapping.json'} (keep private until judging is done)")
+    print(f"  {run_dir / 'judge_packet.md'}")
+    print(f"  {run_dir / 'judge_mapping.json'} (keep private until judging is done)")
 
 
 if __name__ == "__main__":

@@ -1,44 +1,47 @@
 #!/usr/bin/env python3
-"""Combine deterministic + judge scores into a final report.
+"""Combine deterministic + judge scores into a markdown report inside a run folder.
 
-Inputs:
-  results/deterministic_scores.json   (from evaluate.py)
-  results/judge_scores.json           (manually placed: the JSON the judge returned)
-  results/judge_mapping.json          (from judge_prep.py; un-blinds A/B)
+Inputs (all under the run dir):
+  run_meta.json
+  deterministic_scores.json   (from evaluate.py)
+  judge_scores.json           (manually placed: JSON returned by the judge)
+  judge_mapping.json          (from judge_prep.py; un-blinds A/B)
 
 Output:
-  results/report.md
+  {run_dir}/report.md
 """
 from __future__ import annotations
 
+import argparse
 import json
+import sys
 from pathlib import Path
 
 AB_DIR = Path(__file__).resolve().parent
-RESULTS = AB_DIR / "results"
+sys.path.insert(0, str(AB_DIR))
+from _run_dir import resolve_run_dir  # noqa: E402
+
+RESULTS_ROOT = AB_DIR / "results"
 
 
-def load(name: str):
-    path = RESULTS / name
-    if not path.exists():
+def load(run_dir: Path, name: str):
+    p = run_dir / name
+    if not p.exists():
         return None
-    return json.loads(path.read_text())
+    return json.loads(p.read_text())
 
 
 def unblind(judge_scores: dict, mapping: list[dict]) -> dict:
-    """Convert blinded A/B scores into per-branch aggregates."""
     by_pair = {p["pair_id"]: p for p in mapping}
-    branch_scores: dict[str, dict[str, list[float]]] = {
+    branch_scores: dict[str, dict] = {
         "main": {"feature": [], "aesthetic": [], "wins": 0, "ties": 0, "losses": 0},
         "harness": {"feature": [], "aesthetic": [], "wins": 0, "ties": 0, "losses": 0},
     }
     for pair in judge_scores.get("pairs", []):
-        pid = pair["pair_id"]
-        info = by_pair.get(pid)
+        info = by_pair.get(pair["pair_id"])
         if info is None:
             continue
-        a_src = info["A_source"]
-        b_src = info["B_source"]
+        a_src, b_src = info["A_source"], info["B_source"]
         branch_scores[a_src]["feature"].append(float(pair["A"]["feature"]))
         branch_scores[a_src]["aesthetic"].append(float(pair["A"]["aesthetic"]))
         branch_scores[b_src]["feature"].append(float(pair["B"]["feature"]))
@@ -60,8 +63,28 @@ def mean(xs: list[float]) -> float:
     return round(sum(xs) / len(xs), 2) if xs else 0.0
 
 
-def build_report(det: dict, judge: dict | None, mapping: list[dict] | None) -> str:
+def build_report(meta: dict | None, det: dict, judge: dict | None, mapping: list | None) -> str:
     lines = ["# A/B Test Report", ""]
+
+    if meta:
+        g = meta.get("git", {})
+        c = meta.get("config", {})
+        lines.append(f"**Run ID:** `{meta.get('run_id', '?')}`")
+        lines.append(f"**Started:** {meta.get('started_at', '?')}")
+        if meta.get("finished_at"):
+            lines.append(f"**Finished:** {meta['finished_at']}")
+        lines.append(
+            f"**Git:** `{g.get('commit', '?')[:8]}` on `{g.get('branch', '?')}`"
+            + (" (dirty)" if g.get("dirty") else "")
+        )
+        lines.append(
+            f"**Config:** model=`{c.get('model')}` "
+            f"plan_mode=`{c.get('plan_mode')}` "
+            f"max_eval_iterations={c.get('max_eval_iterations')} "
+            f"n_runs={c.get('n_runs')}"
+        )
+        lines.append("")
+
     lines.append("## Deterministic scores")
     lines.append("")
     lines.append("| Branch | Feature | Aesthetic | Combined | File produced |")
@@ -87,20 +110,26 @@ def build_report(det: dict, judge: dict | None, mapping: list[dict] | None) -> s
         lines.append("")
     else:
         lines.append("_Judge scores not yet provided. Run `judge_prep.py`, paste the packet")
-        lines.append("into Claude, save the returned JSON to `results/judge_scores.json`, then re-run."  )
+        lines.append("into Claude, save the returned JSON to `judge_scores.json` in this run dir, then re-run._")
         lines.append("")
 
     return "\n".join(lines)
 
 
 def main() -> None:
-    det = load("deterministic_scores.json")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run-dir", default=None, help="Specific run folder; default: latest")
+    args = ap.parse_args()
+    run_dir = resolve_run_dir(RESULTS_ROOT, args.run_dir)
+
+    meta = load(run_dir, "run_meta.json")
+    det = load(run_dir, "deterministic_scores.json")
     if det is None:
         raise SystemExit("run evaluate.py first")
-    judge = load("judge_scores.json")
-    mapping = load("judge_mapping.json")
-    report = build_report(det, judge, mapping)
-    (RESULTS / "report.md").write_text(report)
+    judge = load(run_dir, "judge_scores.json")
+    mapping = load(run_dir, "judge_mapping.json")
+    report = build_report(meta, det, judge, mapping)
+    (run_dir / "report.md").write_text(report)
     print(report)
 
 

@@ -20,7 +20,7 @@ class TestOrchestratorState:
         assert state.plan is None
         assert state.evaluation_results == []
         assert state.current_iteration == 0
-        assert state.max_iterations == 3
+        assert state.max_iterations == 5
 
     def test_phase_values(self):
         assert OrchestratorPhase.PLANNING == "planning"

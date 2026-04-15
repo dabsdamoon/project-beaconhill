@@ -33,7 +33,33 @@ class OrchestratorState:
     plan: Plan | None = None
     evaluation_results: list[EvaluationResult] = field(default_factory=list)
     current_iteration: int = 0
-    max_iterations: int = 3
+    max_iterations: int = 5
+
+
+def _persistent_failures(
+    history: list[EvaluationResult], step_id: int
+) -> list[str]:
+    """Return issues that appeared in the last TWO evaluations for this step.
+
+    Returning a non-empty list means the same failure survived one retry cycle,
+    which is the pivot trigger: refinement isn't working; the generator should
+    discard its current approach and try a fundamentally different one.
+    """
+    if len(history) < 2:
+        return []
+    last = next(
+        (v for v in history[-1].verdicts if v.step_id == step_id and not v.passed),
+        None,
+    )
+    prev = next(
+        (v for v in history[-2].verdicts if v.step_id == step_id and not v.passed),
+        None,
+    )
+    if last is None or prev is None:
+        return []
+    last_set = set(last.issues)
+    prev_set = set(prev.issues)
+    return sorted(last_set & prev_set)
 
 
 def run_orchestrated(
@@ -48,7 +74,7 @@ def run_orchestrated(
     interactive: bool = True,
     project_context: str = "",
     generator_max_iterations: int = 50,
-    max_eval_iterations: int = 3,
+    max_eval_iterations: int = 5,
     evaluator_tools: list[str] | None = None,
     skip_evaluation: bool = False,
     on_event: EventSink | None = None,
@@ -136,7 +162,9 @@ def run_orchestrated(
         _generate_steps(
             failed_steps, plan, client, registry, session, tools,
             allow_all, context_limit, generator_max_iterations,
-            feedback=result, on_event=on_event, state=state,
+            feedback=result,
+            evaluation_history=state.evaluation_results,
+            on_event=on_event, state=state,
         )
 
     state.phase = OrchestratorPhase.FAILED
@@ -156,6 +184,7 @@ def _generate_steps(
     feedback: EvaluationResult | None,
     on_event: EventSink | None,
     state: OrchestratorState,
+    evaluation_history: list[EvaluationResult] | None = None,
 ) -> None:
     state.phase = OrchestratorPhase.GENERATING
     for step in steps:
@@ -163,7 +192,13 @@ def _generate_steps(
         session.update_plan(plan)
         _emit(on_event, EventType.STEP_STARTED, step_id=step.id, description=step.description)
 
-        step_prompt = _build_step_prompt(step, plan, feedback=feedback)
+        persistent = (
+            _persistent_failures(evaluation_history, step.id)
+            if evaluation_history else []
+        )
+        step_prompt = _build_step_prompt(
+            step, plan, feedback=feedback, persistent_issues=persistent
+        )
         session.append(Message(role=Role.USER, content=step_prompt))
 
         try:
@@ -189,7 +224,10 @@ def _generate_steps(
 
 
 def _build_step_prompt(
-    step: PlanStep, plan: Plan, feedback: EvaluationResult | None = None
+    step: PlanStep,
+    plan: Plan,
+    feedback: EvaluationResult | None = None,
+    persistent_issues: list[str] | None = None,
 ) -> str:
     lines = [
         f"You are executing step {step.id} of the plan: \"{plan.goal}\".",
@@ -204,7 +242,20 @@ def _build_step_prompt(
         lines.append(f"  - {c}")
     lines.append("")
 
-    if feedback is not None:
+    if persistent_issues:
+        lines.append("## Pivot required")
+        lines.append(
+            "The following issues have survived at least one retry -- refining your "
+            "previous approach is not working. DISCARD the current implementation "
+            "and try a fundamentally different approach. Do not patch what is there; "
+            "rewrite from scratch."
+        )
+        lines.append("")
+        lines.append("Persistent issues:")
+        for issue in persistent_issues:
+            lines.append(f"  - {issue}")
+        lines.append("")
+    elif feedback is not None:
         verdict = next(
             (v for v in feedback.verdicts if v.step_id == step.id and not v.passed),
             None,

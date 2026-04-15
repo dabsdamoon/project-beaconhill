@@ -6,8 +6,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from beaconhill.models import Message, Role
-from beaconhill.orchestrator import OrchestratorPhase, run_orchestrated
-from beaconhill.plan import StepStatus
+from beaconhill.orchestrator import (
+    OrchestratorPhase,
+    _persistent_failures,
+    run_orchestrated,
+)
+from beaconhill.plan import (
+    EvaluationResult,
+    Plan,
+    PlanStep,
+    StepStatus,
+    StepVerdict,
+)
 from beaconhill.session import Session
 from beaconhill.state import EventType, RuntimeEvent
 
@@ -219,6 +229,159 @@ class TestStepFailure:
 
         assert session.plan is not None
         assert session.plan.steps[0].status == StepStatus.FAILED
+
+
+class TestPersistentFailures:
+    def _eval(self, step_id: int, passed: bool, issues: list[str]) -> EvaluationResult:
+        return EvaluationResult(
+            overall_passed=passed,
+            verdicts=[StepVerdict(step_id=step_id, passed=passed, issues=issues)],
+            summary="",
+        )
+
+    def test_returns_empty_with_one_evaluation(self):
+        hist = [self._eval(1, False, ["x"])]
+        assert _persistent_failures(hist, 1) == []
+
+    def test_returns_empty_when_no_overlap(self):
+        hist = [
+            self._eval(1, False, ["missing_button"]),
+            self._eval(1, False, ["wrong_color"]),
+        ]
+        assert _persistent_failures(hist, 1) == []
+
+    def test_returns_overlap(self):
+        hist = [
+            self._eval(1, False, ["missing_button", "wrong_color"]),
+            self._eval(1, False, ["wrong_color", "bad_radius"]),
+        ]
+        assert _persistent_failures(hist, 1) == ["wrong_color"]
+
+    def test_returns_empty_when_step_now_passes(self):
+        hist = [
+            self._eval(1, False, ["x"]),
+            self._eval(1, True, []),
+        ]
+        assert _persistent_failures(hist, 1) == []
+
+    def test_returns_empty_when_step_missing_in_prev(self):
+        # step 1 wasn't evaluated in prev iteration
+        hist = [
+            EvaluationResult(
+                overall_passed=True, verdicts=[], summary=""
+            ),
+            self._eval(1, False, ["x"]),
+        ]
+        assert _persistent_failures(hist, 1) == []
+
+
+class TestOrchestratorPivotFlow:
+    def _plan_payload(self) -> str:
+        return json.dumps(
+            {
+                "goal": "g",
+                "steps": [{"id": 1, "description": "a", "acceptance_criteria": ["c"]}],
+            }
+        )
+
+    def test_pivot_prompt_emitted_after_two_same_failures(self, tmp_path: Path):
+        plan_payload = self._plan_payload()
+        fail_eval = json.dumps(
+            {
+                "overall_passed": False,
+                "verdicts": [{"step_id": 1, "passed": False, "issues": ["missing_foo"]}],
+                "summary": "still missing",
+            }
+        )
+        pass_eval = json.dumps(
+            {
+                "overall_passed": True,
+                "verdicts": [{"step_id": 1, "passed": True, "issues": []}],
+                "summary": "ok",
+            }
+        )
+        client = MagicMock()
+        client.chat.side_effect = [
+            Message(role=Role.ASSISTANT, content=plan_payload),
+            Message(role=Role.ASSISTANT, content=fail_eval),
+            Message(role=Role.ASSISTANT, content=fail_eval),
+            Message(role=Role.ASSISTANT, content=pass_eval),
+        ]
+        registry = MagicMock()
+        session = Session(model="test", session_dir=tmp_path)
+
+        with patch("beaconhill.orchestrator.run_agentic_loop"):
+            state = run_orchestrated(
+                client=client,
+                registry=registry,
+                session=session,
+                tools=[],
+                allow_all=True,
+                context_limit=4096,
+                user_input="do it",
+                interactive=False,
+                max_eval_iterations=5,
+            )
+
+        assert state.phase == OrchestratorPhase.COMPLETE
+        user_prompts = [m.content for m in session.messages if m.role == Role.USER]
+        # 3 step prompts: first, retry-with-feedback, retry-with-pivot
+        assert len(user_prompts) == 3
+        assert "Pivot required" not in user_prompts[0]
+        assert "Pivot required" not in user_prompts[1]
+        assert "Pivot required" in user_prompts[2]
+        assert "missing_foo" in user_prompts[2]
+        assert "DISCARD" in user_prompts[2]
+
+    def test_no_pivot_when_failures_differ(self, tmp_path: Path):
+        plan_payload = self._plan_payload()
+        fail_a = json.dumps(
+            {
+                "overall_passed": False,
+                "verdicts": [{"step_id": 1, "passed": False, "issues": ["a"]}],
+                "summary": "",
+            }
+        )
+        fail_b = json.dumps(
+            {
+                "overall_passed": False,
+                "verdicts": [{"step_id": 1, "passed": False, "issues": ["b"]}],
+                "summary": "",
+            }
+        )
+        pass_eval = json.dumps(
+            {
+                "overall_passed": True,
+                "verdicts": [{"step_id": 1, "passed": True, "issues": []}],
+                "summary": "ok",
+            }
+        )
+        client = MagicMock()
+        client.chat.side_effect = [
+            Message(role=Role.ASSISTANT, content=plan_payload),
+            Message(role=Role.ASSISTANT, content=fail_a),
+            Message(role=Role.ASSISTANT, content=fail_b),
+            Message(role=Role.ASSISTANT, content=pass_eval),
+        ]
+        registry = MagicMock()
+        session = Session(model="test", session_dir=tmp_path)
+
+        with patch("beaconhill.orchestrator.run_agentic_loop"):
+            run_orchestrated(
+                client=client,
+                registry=registry,
+                session=session,
+                tools=[],
+                allow_all=True,
+                context_limit=4096,
+                user_input="do it",
+                interactive=False,
+                max_eval_iterations=5,
+            )
+
+        user_prompts = [m.content for m in session.messages if m.role == Role.USER]
+        # Three prompts, none should pivot (different issues each time)
+        assert all("Pivot required" not in p for p in user_prompts)
 
 
 class TestSessionPersistence:

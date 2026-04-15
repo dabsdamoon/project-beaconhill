@@ -4,6 +4,11 @@
 # Usage: bash ab_test/run.sh [N]
 #   N = runs per branch (default 3)
 #
+# Output: ab_test/results/{YYYYMMDDTHHMMSS-shorthash}[_dirty]/
+#   run_meta.json   (code version, config, env)
+#   main/run-{1..N}/
+#   harness/run-{1..N}/
+#
 # Requires: ollama running locally, gemma4:26b pulled, git, python3.12.
 
 set -euo pipefail
@@ -11,20 +16,32 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AB_DIR="$ROOT/ab_test"
 PROMPT_FILE="$AB_DIR/prompt.md"
-WORKTREES="$AB_DIR/worktrees"
 RESULTS="$AB_DIR/results"
 N="${1:-3}"
 
 MODEL="${BEACONHILL_MODEL:-gemma4:26b}"
 CONTEXT_LIMIT="${BEACONHILL_CONTEXT_LIMIT:-32768}"
+PLAN_MODE="always"
+MAX_EVAL_ITERATIONS="${BEACONHILL_MAX_EVAL_ITERATIONS:-5}"
 
 BRANCHES=("main" "harness")
 REFS=(main feat/apply_claude_harness)
 
-mkdir -p "$WORKTREES" "$RESULTS"
+mkdir -p "$RESULTS"
 
-# Resolve the directory to use for a branch. If the branch is already checked
-# out at ROOT, reuse ROOT (git refuses to create a second worktree for it).
+# Compute run ID + write run_meta.json; also writes diff.patch if tree is dirty.
+RUN_ID=$(python3 "$AB_DIR/run_meta.py" new \
+    --results-dir "$RESULTS" \
+    --model "$MODEL" \
+    --plan-mode "$PLAN_MODE" \
+    --n-runs "$N" \
+    --max-eval-iterations "$MAX_EVAL_ITERATIONS" \
+    --prompt-file "$PROMPT_FILE")
+RUN_DIR="$RESULTS/$RUN_ID"
+echo "[run] run_id: $RUN_ID"
+echo "[run] run_dir: $RUN_DIR"
+
+# Resolve worktree for a branch. Reuse ROOT if the branch is already checked out there.
 worktree_path() {
     local name="$1" ref="$2"
     local current
@@ -32,7 +49,7 @@ worktree_path() {
     if [[ "$current" == "$ref" ]]; then
         echo "$ROOT"
     else
-        echo "$WORKTREES/$name"
+        echo "$AB_DIR/worktrees/$name"
     fi
 }
 
@@ -45,6 +62,7 @@ setup_worktree() {
         echo "[setup] $name uses ROOT checkout (branch already checked out there)"
     elif [[ ! -d "$wt/.git" && ! -f "$wt/.git" ]]; then
         echo "[setup] creating worktree for $name ($ref)"
+        mkdir -p "$AB_DIR/worktrees"
         git -C "$ROOT" worktree add "$wt" "$ref"
     else
         echo "[setup] worktree for $name exists"
@@ -60,12 +78,12 @@ run_one() {
     local name="$1" ref="$2" run_idx="$3"
     local wt
     wt=$(worktree_path "$name" "$ref")
-    local out="$RESULTS/$name/run-$run_idx"
+    local out="$RUN_DIR/$name/run-$run_idx"
     mkdir -p "$out"
 
     local extra_args=()
     if [[ "$name" == "harness" ]]; then
-        extra_args+=(--plan-mode always)
+        extra_args+=(--plan-mode "$PLAN_MODE")
     fi
 
     echo "[run] $name run-$run_idx"
@@ -86,7 +104,6 @@ run_one() {
     t1=$(python3 -c 'import time; print(time.time())')
     python3 -c "print(round($t1 - $t0, 2))" > "$out/wall_seconds.txt"
 
-    # Extract plan JSON and evaluation JSON from the session JSONL (harness only produces these).
     local session
     session=$(ls "$out/sessions"/*.jsonl 2>/dev/null | head -1 || true)
     if [[ -n "$session" ]]; then
@@ -108,9 +125,11 @@ main() {
         done
     done
 
+    python3 "$AB_DIR/run_meta.py" finish --results-dir "$RESULTS" --run-id "$RUN_ID"
+
     echo ""
-    echo "All runs complete. Results in: $RESULTS"
-    echo "Next: python3 $AB_DIR/evaluate.py"
+    echo "All runs complete. Results in: $RUN_DIR"
+    echo "Next: python3 $AB_DIR/evaluate.py --run-dir $RUN_DIR"
 }
 
 main "$@"

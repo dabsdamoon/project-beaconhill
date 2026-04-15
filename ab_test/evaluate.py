@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""Deterministic scoring of each A/B run.
+"""Deterministic scoring of each A/B run inside a specific run folder.
 
-Writes `scores.json` per run with feature + aesthetic breakdowns and a combined
-score in [0, 1]. Judge scores (pairwise, LLM) are added later by `report.py`
-from a separate judge packet.
+Writes `scores.json` per run and `deterministic_scores.json` at the run-dir root.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import re
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 AB_DIR = Path(__file__).resolve().parent
-RESULTS = AB_DIR / "results"
+sys.path.insert(0, str(AB_DIR))
+from _run_dir import resolve_run_dir  # noqa: E402
+
+RESULTS_ROOT = AB_DIR / "results"
 
 
 @dataclass
@@ -55,18 +58,14 @@ AESTHETIC_CHECKS = [
 def score_html(text: str) -> Score:
     score = Score()
     score.size_bytes = len(text)
-    lower = text  # regex is already case-insensitive via flag below
-
     for name, pattern in FEATURE_CHECKS:
-        score.feature[name] = bool(re.search(pattern, lower, re.IGNORECASE))
+        score.feature[name] = bool(re.search(pattern, text, re.IGNORECASE))
     for name, pattern in AESTHETIC_CHECKS:
-        score.aesthetic[name] = bool(re.search(pattern, lower, re.IGNORECASE))
-
+        score.aesthetic[name] = bool(re.search(pattern, text, re.IGNORECASE))
     if score.feature:
         score.feature_score = sum(score.feature.values()) / len(score.feature)
     if score.aesthetic:
         score.aesthetic_score = sum(score.aesthetic.values()) / len(score.aesthetic)
-    # Deterministic combined = equal weight over features + aesthetics.
     score.combined_score = (score.feature_score + score.aesthetic_score) / 2
     return score
 
@@ -82,22 +81,19 @@ def eval_run(run_dir: Path) -> Score:
     return score
 
 
-def main() -> None:
-    aggregate = {"branches": {}}
-    for branch_dir in sorted(RESULTS.iterdir()):
+def run(run_dir: Path) -> dict:
+    aggregate: dict = {"run_dir": str(run_dir), "branches": {}}
+    for branch in ("main", "harness"):
+        branch_dir = run_dir / branch
         if not branch_dir.is_dir():
             continue
-        branch = branch_dir.name
         runs: list[dict] = []
-        for run_dir in sorted(branch_dir.iterdir()):
-            if not run_dir.is_dir():
+        for rd in sorted(branch_dir.iterdir()):
+            if not rd.is_dir() or not rd.name.startswith("run-"):
                 continue
-            score = eval_run(run_dir)
-            (run_dir / "scores.json").write_text(
-                json.dumps(asdict(score), indent=2) + "\n"
-            )
-            runs.append({"run": run_dir.name, **asdict(score)})
-
+            score = eval_run(rd)
+            (rd / "scores.json").write_text(json.dumps(asdict(score), indent=2) + "\n")
+            runs.append({"run": rd.name, **asdict(score)})
         if runs:
             feat = [r["feature_score"] for r in runs]
             aes = [r["aesthetic_score"] for r in runs]
@@ -111,11 +107,18 @@ def main() -> None:
                     sum(1 for r in runs if r["file_exists"]) / len(runs), 3
                 ),
             }
-
-    (RESULTS / "deterministic_scores.json").write_text(
+    (run_dir / "deterministic_scores.json").write_text(
         json.dumps(aggregate, indent=2) + "\n"
     )
-    print(json.dumps(aggregate, indent=2))
+    return aggregate
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run-dir", default=None, help="Specific run folder; default: latest")
+    args = ap.parse_args()
+    run_dir = resolve_run_dir(RESULTS_ROOT, args.run_dir)
+    print(json.dumps(run(run_dir), indent=2))
 
 
 if __name__ == "__main__":
