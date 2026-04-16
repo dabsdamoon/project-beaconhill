@@ -113,6 +113,7 @@ def run_orchestrated(
         plan.steps, plan, client, registry, session, tools,
         allow_all, context_limit, generator_max_iterations,
         feedback=None, on_event=on_event, state=state,
+        original_request=user_input,
     )
 
     if skip_evaluation:
@@ -166,6 +167,7 @@ def run_orchestrated(
             feedback=result,
             evaluation_history=state.evaluation_results,
             on_event=on_event, state=state,
+            original_request=user_input,
         )
 
     state.phase = OrchestratorPhase.FAILED
@@ -186,6 +188,7 @@ def _generate_steps(
     on_event: EventSink | None,
     state: OrchestratorState,
     evaluation_history: list[EvaluationResult] | None = None,
+    original_request: str = "",
 ) -> None:
     state.phase = OrchestratorPhase.GENERATING
     for step in steps:
@@ -209,7 +212,8 @@ def _generate_steps(
             if removed:
                 ui.info(f"Pivot on step {step.id}: removed {len(removed)} prior file(s)")
         step_prompt = _build_step_prompt(
-            step, plan, feedback=feedback, persistent_issues=persistent
+            step, plan, feedback=feedback, persistent_issues=persistent,
+            original_request=original_request,
         )
         session.append(Message(role=Role.USER, content=step_prompt))
 
@@ -240,16 +244,27 @@ def _build_step_prompt(
     plan: Plan,
     feedback: EvaluationResult | None = None,
     persistent_issues: list[str] | None = None,
+    original_request: str = "",
 ) -> str:
     lines = [
         f"You are executing step {step.id} of the plan: \"{plan.goal}\".",
         "",
-        f"## Step {step.id}: {step.description}",
     ]
+    if original_request:
+        lines.append("## Original user request (ground truth)")
+        lines.append(original_request.strip())
+        lines.append("")
+        lines.append(
+            "The acceptance criteria below are the planner's interpretation. "
+            "If they conflict with or omit something from the original user request "
+            "above, prioritize the original request."
+        )
+        lines.append("")
+    lines.append(f"## Step {step.id}: {step.description}")
     if step.files:
         lines.append(f"Files likely involved: {', '.join(step.files)}")
     lines.append("")
-    lines.append("Acceptance criteria:")
+    lines.append("Acceptance criteria (planner's interpretation):")
     for c in step.acceptance_criteria:
         lines.append(f"  - {c}")
     lines.append("")

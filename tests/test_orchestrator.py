@@ -485,6 +485,41 @@ class TestOrchestratorPivotFlow:
         assert all("Pivot required" not in p for p in user_prompts)
 
 
+class TestOriginalRequestInStepPrompt:
+    def test_original_request_appears_in_step_prompt(self, tmp_path: Path):
+        payload = json.dumps(
+            {
+                "goal": "x",
+                "steps": [{"id": 1, "description": "a", "acceptance_criteria": ["c"]}],
+            }
+        )
+        client = MagicMock()
+        client.chat.return_value = Message(role=Role.ASSISTANT, content=payload)
+        registry = MagicMock()
+        session = Session(model="test", session_dir=tmp_path)
+
+        original = "Please build a Pomodoro timer with a Break button."
+
+        with patch("beaconhill.orchestrator.run_agentic_loop"):
+            run_orchestrated(
+                client=client,
+                registry=registry,
+                session=session,
+                tools=[],
+                allow_all=True,
+                context_limit=4096,
+                user_input=original,
+                interactive=False,
+                skip_evaluation=True,
+            )
+
+        user_msgs = [m.content for m in session.messages if m.role == Role.USER]
+        assert len(user_msgs) == 1
+        assert "Original user request" in user_msgs[0]
+        assert original in user_msgs[0]
+        assert "prioritize the original request" in user_msgs[0]
+
+
 class TestSessionPersistence:
     def test_plan_persisted_to_jsonl(self, session: Session):
         payload = _plan_json(
