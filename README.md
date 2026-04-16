@@ -133,6 +133,10 @@ brew services stop ollama
 .venv/bin/python evals/runner.py --tier 1
 ```
 
+## Release notes
+
+Release notes for notable changes and experiments live in `docs/release_note/`. Start with [`harness-convergence.md`](docs/release_note/harness-convergence.md) for the round-by-round story of the plan-generate-evaluate harness.
+
 ## Project structure
 
 ```
@@ -151,4 +155,8 @@ evals/
   fixtures/     Test cases (tiers 1-3)
 tests/          Unit tests
 scripts/        Deployment packaging
+docs/
+  design/       Architecture and plans
+  reference/    How-to and lookup material
+  release_note/ Release notes and A/B test retrospectives
 ```
