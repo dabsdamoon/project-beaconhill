@@ -1,0 +1,1 @@
+Create a module `strings.py` that exports a `snake_to_camel(s)` function converting snake_case to camelCase, and add a test file `test_strings.py` with at least three assertions covering: basic conversion, single-word input, and empty string. Then run `python3 -m pytest test_strings.py` to verify the tests pass.

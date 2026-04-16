@@ -7,8 +7,9 @@ from typing import Any
 
 from beaconhill.agent import MAX_ITERATIONS, build_system_prompt
 from beaconhill.client import OllamaClient
-from beaconhill.config import Config
+from beaconhill.config import Config, PLAN_MODE_NEVER, VALID_PLAN_MODES, should_plan
 from beaconhill.models import Message, Role
+from beaconhill.orchestrator import run_orchestrated
 from beaconhill.runtime import run_agentic_loop
 from beaconhill.session import DEFAULT_SESSION_DIR, Session
 from beaconhill.tools import create_default_registry
@@ -32,6 +33,17 @@ def parse_args() -> argparse.Namespace:
         action="append",
         default=None,
         help="Attach an image file to the prompt (repeatable). Requires a vision-capable model.",
+    )
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="Force orchestrated plan-generate mode for this run (shorthand for --plan-mode always).",
+    )
+    parser.add_argument(
+        "--plan-mode",
+        choices=list(VALID_PLAN_MODES),
+        default=None,
+        help="When to use orchestrated planning: always, never, or auto (heuristic).",
     )
     return parser.parse_args()
 
@@ -121,6 +133,25 @@ def main() -> None:
     # One-shot mode
     if args.prompt:
         images = _validate_image_paths(args.image) if args.image else None
+        if should_plan(args.prompt, config.plan_mode):
+            try:
+                run_orchestrated(
+                    client=client,
+                    registry=registry,
+                    session=session,
+                    tools=tools,
+                    allow_all=config.allow_all,
+                    context_limit=config.context_limit,
+                    user_input=args.prompt,
+                    interactive=False,
+                    max_eval_iterations=config.max_eval_iterations,
+                    evaluator_tools=config.evaluator_tools,
+                )
+            except ConnectionError as e:
+                ui.error(f"Beacon flickering. {e}")
+                sys.exit(1)
+            return
+
         user_msg = Message(role=Role.USER, content=args.prompt, images=images)
         session.append(user_msg)
         try:
@@ -132,6 +163,7 @@ def main() -> None:
 
     # Interactive REPL
     pending_images: list[str] = []
+    plan_next_turn = False
     while True:
         try:
             prompt_str = ui.amber(">>> ") if ui._use_color() else ">>> "
@@ -168,9 +200,39 @@ def main() -> None:
             pending_images.clear()
             ui.info("Cleared pending images.")
             continue
+        if stripped == "/plan":
+            plan_next_turn = True
+            ui.info("Next turn will run in plan-generate mode.")
+            continue
 
         images = pending_images.copy() if pending_images else None
         pending_images.clear()
+
+        use_plan = plan_next_turn or (
+            config.plan_mode != PLAN_MODE_NEVER
+            and should_plan(user_input, config.plan_mode)
+        )
+        if use_plan:
+            plan_next_turn = False
+            try:
+                run_orchestrated(
+                    client=client,
+                    registry=registry,
+                    session=session,
+                    tools=tools,
+                    allow_all=config.allow_all,
+                    context_limit=config.context_limit,
+                    user_input=user_input,
+                    interactive=config.plan_approval,
+                    max_eval_iterations=config.max_eval_iterations,
+                    evaluator_tools=config.evaluator_tools,
+                )
+            except ConnectionError as e:
+                ui.error(f"Beacon flickering. {e}")
+            except KeyboardInterrupt:
+                ui.warning("Interrupted.")
+            continue
+
         user_msg = Message(role=Role.USER, content=user_input, images=images)
         session.append(user_msg)
 

@@ -11,6 +11,18 @@ from beaconhill.models import Message, Role, ToolCall
 MAX_RETRIES = 3
 RETRY_DELAYS = [2, 5, 10]
 
+# Connection errors are usually transient -- retry the standard 3 times.
+# Timeouts almost always indicate Ollama is wedged (model swap, queue stall);
+# retrying many times wastes the per-call budget. Cap at 1 retry with a long
+# pause so Ollama has a chance to recover.
+TIMEOUT_MAX_ATTEMPTS = 2
+TIMEOUT_RETRY_DELAY = 30
+
+# Per-request timeout in seconds. 120s is tight enough to surface a wedged
+# Ollama within minutes, and most legitimate Gemma calls on this stack
+# (planner, generator step, evaluator) complete well under it.
+DEFAULT_REQUEST_TIMEOUT = 120
+
 
 class LLMClient(Protocol):
     def chat(self, messages: list[Message], tools: list[dict[str, Any]] | None = None) -> Message: ...
@@ -37,9 +49,10 @@ class OllamaClient:
         self,
         model: str = "gemma4:26b",
         host: str = "http://localhost:11434",
+        request_timeout: float = DEFAULT_REQUEST_TIMEOUT,
     ) -> None:
         self.model = model
-        self._client = ollama_lib.Client(host=host)
+        self._client = ollama_lib.Client(host=host, timeout=request_timeout)
         self.max_retries = MAX_RETRIES
         self.last_prompt_tokens: int = 0
         self.last_completion_tokens: int = 0
@@ -50,6 +63,8 @@ class OllamaClient:
         messages: list[Message],
         tools: list[dict[str, Any]] | None = None,
         on_retry: RetryCallback | None = None,
+        format: str | dict[str, Any] | None = None,
+        options: dict[str, Any] | None = None,
     ) -> Message:
         kwargs: dict[str, Any] = {
             "model": self.model,
@@ -57,6 +72,10 @@ class OllamaClient:
         }
         if tools:
             kwargs["tools"] = tools
+        if format is not None:
+            kwargs["format"] = format
+        if options is not None:
+            kwargs["options"] = options
 
         response = self._call_with_retry(kwargs, on_retry=on_retry)
         return self._parse_response(response)
@@ -67,7 +86,11 @@ class OllamaClient:
         on_retry: RetryCallback | None = None,
     ) -> Any:
         last_error: Exception | None = None
-        for attempt in range(MAX_RETRIES):
+        attempt = 0
+        # MAX_RETRIES is the cap for connection retries. Timeouts get a smaller
+        # cap (TIMEOUT_MAX_ATTEMPTS) because retrying a wedged Ollama rarely helps.
+        max_attempts = MAX_RETRIES
+        while attempt < max_attempts:
             try:
                 return self._client.chat(**kwargs)
             except Exception as e:
@@ -83,17 +106,22 @@ class OllamaClient:
                         if on_retry is not None:
                             on_retry(attempt + 1, delay, kind)
                         time.sleep(delay)
+                        attempt += 1
                         continue
                     raise ConnectionError(
                         f"Cannot connect to Ollama. Is `ollama serve` running?"
                     ) from e
                 if kind == "timeout":
-                    if attempt < MAX_RETRIES - 1:
-                        delay = RETRY_DELAYS[attempt]
+                    if attempt < TIMEOUT_MAX_ATTEMPTS - 1:
                         if on_retry is not None:
-                            on_retry(attempt + 1, delay, kind)
-                        time.sleep(delay)
+                            on_retry(attempt + 1, TIMEOUT_RETRY_DELAY, kind)
+                        time.sleep(TIMEOUT_RETRY_DELAY)
+                        attempt += 1
                         continue
+                    raise TimeoutError(
+                        f"Ollama request timed out twice. The model may be wedged; "
+                        f"try restarting `ollama serve`."
+                    ) from e
                 raise
         raise last_error  # type: ignore[misc]
 

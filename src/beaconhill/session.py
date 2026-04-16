@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from beaconhill.models import Message
+from beaconhill.plan import EvaluationResult, Plan
 
 DEFAULT_SESSION_DIR = Path.home() / ".beaconhill" / "sessions"
 
@@ -50,6 +51,8 @@ class Session:
             model=model,
         )
         self.messages: list[Message] = []
+        self.plan: Plan | None = None
+        self.evaluation_results: list[EvaluationResult] = []
 
         dir_ = session_dir or DEFAULT_SESSION_DIR
         dir_.mkdir(parents=True, exist_ok=True)
@@ -61,6 +64,19 @@ class Session:
         self.messages.append(message)
         self._write_line(message.to_dict())
 
+    def set_plan(self, plan: Plan) -> None:
+        self.plan = plan
+        self._write_line(plan.to_dict())
+
+    def update_plan(self, plan: Plan) -> None:
+        """Update the in-memory plan and persist its current state."""
+        self.plan = plan
+        self._write_line(plan.to_dict())
+
+    def add_evaluation(self, result: EvaluationResult) -> None:
+        self.evaluation_results.append(result)
+        self._write_line(result.to_dict())
+
     def _write_line(self, data: dict[str, Any]) -> None:
         with open(self.path, "a") as f:
             f.write(json.dumps(data, ensure_ascii=False) + "\n")
@@ -70,6 +86,8 @@ class Session:
         session = object.__new__(cls)
         session.path = path
         session.messages = []
+        session.plan = None
+        session.evaluation_results = []
 
         with open(path) as f:
             for line in f:
@@ -79,6 +97,12 @@ class Session:
                 data = json.loads(line)
                 if data.get("_meta"):
                     session.meta = SessionMeta.from_dict(data)
+                elif data.get("_plan"):
+                    session.plan = Plan.from_dict(data)
+                elif data.get("_evaluation"):
+                    session.evaluation_results.append(
+                        EvaluationResult.from_dict(data)
+                    )
                 else:
                     session.messages.append(Message.from_dict(data))
 

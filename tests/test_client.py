@@ -1,6 +1,12 @@
 from unittest.mock import MagicMock, patch
 
-from beaconhill.client import OllamaClient, _classify_error
+from beaconhill.client import (
+    DEFAULT_REQUEST_TIMEOUT,
+    TIMEOUT_MAX_ATTEMPTS,
+    TIMEOUT_RETRY_DELAY,
+    OllamaClient,
+    _classify_error,
+)
 from beaconhill.models import Message, Role, ToolCall
 
 
@@ -178,6 +184,66 @@ class TestRetry:
             result = client.chat([Message(role=Role.USER, content="hi")])
             assert result.content == "recovered"
             assert mock_client.chat.call_count == 2
+
+    @patch("beaconhill.client.time.sleep")
+    def test_timeout_retries_only_once(self, mock_sleep):
+        with patch("beaconhill.client.ollama_lib") as mock_lib:
+            mock_client = MagicMock()
+            mock_lib.Client.return_value = mock_client
+            mock_client.chat.side_effect = Exception("request timed out")
+
+            client = OllamaClient()
+            import pytest
+            with pytest.raises(TimeoutError, match="timed out twice"):
+                client.chat([Message(role=Role.USER, content="hi")])
+            # Two attempts total: initial + one retry.
+            assert mock_client.chat.call_count == TIMEOUT_MAX_ATTEMPTS == 2
+            # One sleep between the two attempts, with the long delay.
+            mock_sleep.assert_called_once_with(TIMEOUT_RETRY_DELAY)
+
+    @patch("beaconhill.client.time.sleep")
+    def test_timeout_recovers_on_retry(self, mock_sleep):
+        with patch("beaconhill.client.ollama_lib") as mock_lib:
+            mock_client = MagicMock()
+            mock_lib.Client.return_value = mock_client
+            mock_client.chat.side_effect = [
+                Exception("request timed out"),
+                {"message": {"role": "assistant", "content": "ok"},
+                 "prompt_eval_count": 0, "eval_count": 0},
+            ]
+
+            client = OllamaClient()
+            result = client.chat([Message(role=Role.USER, content="hi")])
+            assert result.content == "ok"
+            assert mock_client.chat.call_count == 2
+
+    @patch("beaconhill.client.time.sleep")
+    def test_timeout_callback_uses_timeout_delay(self, mock_sleep):
+        with patch("beaconhill.client.ollama_lib") as mock_lib:
+            mock_client = MagicMock()
+            mock_lib.Client.return_value = mock_client
+            mock_client.chat.side_effect = [
+                Exception("read timeout"),
+                {"message": {"role": "assistant", "content": "ok"},
+                 "prompt_eval_count": 0, "eval_count": 0},
+            ]
+            callback = MagicMock()
+            client = OllamaClient()
+            client.chat([Message(role=Role.USER, content="hi")], on_retry=callback)
+            callback.assert_called_once_with(1, TIMEOUT_RETRY_DELAY, "timeout")
+
+    def test_constructor_passes_timeout_to_client(self):
+        with patch("beaconhill.client.ollama_lib") as mock_lib:
+            OllamaClient(request_timeout=123)
+            mock_lib.Client.assert_called_once()
+            kwargs = mock_lib.Client.call_args.kwargs
+            assert kwargs["timeout"] == 123
+
+    def test_default_timeout_value(self):
+        with patch("beaconhill.client.ollama_lib") as mock_lib:
+            OllamaClient()
+            kwargs = mock_lib.Client.call_args.kwargs
+            assert kwargs["timeout"] == DEFAULT_REQUEST_TIMEOUT
 
     @patch("beaconhill.client.time.sleep")
     def test_retry_callback_receives_attempt_metadata(self, mock_sleep):

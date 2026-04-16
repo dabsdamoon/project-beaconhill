@@ -25,3 +25,8 @@ evals/results/
 tmp/
 .claude/*
 docs/notes*
+
+# A/B test worktrees and run artifacts
+ab_test/worktrees/
+ab_test/results*
+ab_test/run.log

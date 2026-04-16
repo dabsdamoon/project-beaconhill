@@ -47,6 +47,14 @@ class EventType(str, Enum):
     ASSISTANT_STREAM_FINISHED = "assistant_stream_finished"
     TURN_COMPLETED = "turn_completed"
     TURN_FAILED = "turn_failed"
+    PLAN_CREATED = "plan_created"
+    PLAN_APPROVED = "plan_approved"
+    STEP_STARTED = "step_started"
+    STEP_COMPLETED = "step_completed"
+    EVALUATION_STARTED = "evaluation_started"
+    EVALUATION_COMPLETED = "evaluation_completed"
+    ORCHESTRATOR_RETRY = "orchestrator_retry"
+    PIVOT_TRIGGERED = "pivot_triggered"
 
 
 @dataclass
