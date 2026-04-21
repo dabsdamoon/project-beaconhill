@@ -29,9 +29,9 @@ Beaconhill already has runtime state, but most of it is implicit in control flow
 
 Examples from the current code:
 
-- [cli.py](/Users/dabsdamoon/projects/project-beaconhill/src/beaconhill/cli.py) owns turn orchestration, permission flow, session mutation, and much of the presentation sequencing.
-- [ui.py](/Users/dabsdamoon/projects/project-beaconhill/src/beaconhill/ui.py) provides print helpers and a pulse animation, but it does not render from a shared state object.
-- [client.py](/Users/dabsdamoon/projects/project-beaconhill/src/beaconhill/client.py) prints retry notices directly, which bypasses UI control.
+- [cli.py](../../src/beaconhill/cli.py) owns turn orchestration, permission flow, session mutation, and much of the presentation sequencing.
+- [ui.py](../../src/beaconhill/ui.py) provides print helpers and a pulse animation, but it does not render from a shared state object.
+- [client.py](../../src/beaconhill/client.py) prints retry notices directly, which bypasses UI control.
 
 This creates several issues:
 

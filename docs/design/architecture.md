@@ -15,7 +15,7 @@ Beaconhill takes the structural rigor of claw-code's loop design and the deploym
 
 ## Reference: claw-code
 
-Source: `/Users/dabsdamoon/projects/claw-code`
+Source: an internal Rust/Python agentic harness (private reference).
 
 ### What It Is
 

@@ -78,9 +78,9 @@ pip install ollama
 
 ---
 
-## 2. Local Skills — from `/Users/dabsdamoon/projects/my-little-skills`
+## 2. Local Skills — internal skill collection
 
-A collection of 32 Claude Code skills organized into 11 plugin packages. Several contain patterns, scripts, and frameworks directly applicable to beaconhill.
+A private collection of 32 Claude Code skills organized into 11 plugin packages. Several contain patterns, scripts, and frameworks directly applicable to beaconhill.
 
 ### 2a. `system-prompt-creator`
 

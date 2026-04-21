@@ -39,5 +39,5 @@ brew services stop ollama       # stop when not in use
 
 ## Reference Architectures
 
-- **claw-code** (`/Users/dabsdamoon/projects/claw-code`) — Rust/Python agentic loop harness with trait-driven runtime, 40+ tools, hook system, and permission layering
+- **claw-code** — Rust/Python agentic loop harness with trait-driven runtime, 40+ tools, hook system, and permission layering (internal reference)
 - **OpenClaw** (`https://github.com/openclaw/openclaw`) — Node.js personal AI assistant with gateway-based multi-channel routing and device-node execution model

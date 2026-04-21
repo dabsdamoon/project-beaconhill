@@ -22,7 +22,7 @@ This downloads ~15GB of model weights. Only needed once.
 ### 2. Install Beaconhill
 
 ```bash
-cd /Users/dabsdamoon/projects/project-beaconhill
+cd project-beaconhill   # the directory you cloned into
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e .
