@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Deterministic scoring of each A/B run inside a specific run folder.
 
+Multi-cell aware: discovers cells from run_meta.json's config.cells map.
 Writes `scores.json` per run and `deterministic_scores.json` at the run-dir root.
 """
 from __future__ import annotations
@@ -81,14 +82,27 @@ def eval_run(run_dir: Path) -> Score:
     return score
 
 
+def cells_from_meta(run_dir: Path) -> list[str]:
+    meta_path = run_dir / "run_meta.json"
+    if not meta_path.exists():
+        # Fallback: scan subdirs containing run-*.
+        return sorted(
+            d.name for d in run_dir.iterdir()
+            if d.is_dir() and any(c.name.startswith("run-") for c in d.iterdir() if c.is_dir())
+        )
+    meta = json.loads(meta_path.read_text())
+    cells = meta.get("config", {}).get("cells", {})
+    return sorted(cells.keys())
+
+
 def run(run_dir: Path) -> dict:
-    aggregate: dict = {"run_dir": str(run_dir), "branches": {}}
-    for branch in ("main", "harness"):
-        branch_dir = run_dir / branch
-        if not branch_dir.is_dir():
+    aggregate: dict = {"run_dir": str(run_dir), "cells": {}}
+    for cell in cells_from_meta(run_dir):
+        cell_dir = run_dir / cell
+        if not cell_dir.is_dir():
             continue
         runs: list[dict] = []
-        for rd in sorted(branch_dir.iterdir()):
+        for rd in sorted(cell_dir.iterdir()):
             if not rd.is_dir() or not rd.name.startswith("run-"):
                 continue
             score = eval_run(rd)
@@ -98,7 +112,7 @@ def run(run_dir: Path) -> dict:
             feat = [r["feature_score"] for r in runs]
             aes = [r["aesthetic_score"] for r in runs]
             comb = [r["combined_score"] for r in runs]
-            aggregate["branches"][branch] = {
+            aggregate["cells"][cell] = {
                 "runs": runs,
                 "mean_feature": round(sum(feat) / len(feat), 3),
                 "mean_aesthetic": round(sum(aes) / len(aes), 3),

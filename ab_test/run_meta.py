@@ -3,6 +3,9 @@
 
 Used by run.sh at the start of a run. Run ID format:
     {YYYYMMDDTHHMMSS}-{short_sha}[_dirty]
+
+Multi-cell aware: --cells A,B,D records per-cell config in the meta file
+by reading ab_test/cells.json.
 """
 from __future__ import annotations
 
@@ -11,11 +14,14 @@ import hashlib
 import json
 import os
 import platform
+import random
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+AB_DIR = Path(__file__).resolve().parent
+CELLS_FILE = AB_DIR / "cells.json"
 
 
 def _git(*args: str) -> str:
@@ -42,6 +48,16 @@ def _ollama_version() -> str:
         return "unavailable"
 
 
+def _claude_version() -> str:
+    try:
+        out = subprocess.run(
+            ["claude", "--version"], capture_output=True, text=True, timeout=5
+        ).stdout.strip()
+        return out or "unknown"
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return "unavailable"
+
+
 def compute_run_id(now: datetime | None = None) -> str:
     now = now or datetime.now(timezone.utc)
     ts = now.strftime("%Y%m%dT%H%M%S")
@@ -50,21 +66,37 @@ def compute_run_id(now: datetime | None = None) -> str:
     return f"{ts}-{short}{suffix}"
 
 
+def load_cell_registry() -> dict:
+    if not CELLS_FILE.exists():
+        raise SystemExit(f"cells.json not found at {CELLS_FILE}")
+    return json.loads(CELLS_FILE.read_text())
+
+
+def resolve_cells(cells_arg: str, registry: dict) -> dict:
+    """Return {cell_id: cell_config} for the requested cells."""
+    requested = [c.strip() for c in cells_arg.split(",") if c.strip()]
+    missing = [c for c in requested if c not in registry]
+    if missing:
+        raise SystemExit(f"unknown cell(s): {missing}. Known: {sorted(registry)}")
+    return {c: registry[c] for c in requested}
+
+
+def build_run_order(cells: list[str], n_runs: int, seed: int) -> list[tuple[str, int]]:
+    """Pre-generate a shuffled (cell, run_idx) trial sequence."""
+    trials = [(c, i + 1) for c in cells for i in range(n_runs)]
+    random.Random(seed).shuffle(trials)
+    return trials
+
+
 def build_meta(
     run_id: str,
-    model: str,
-    plan_mode: str,
+    cells: dict,
     n_runs: int,
-    max_eval_iterations: int | None,
+    seed: int,
     prompt_file: Path,
 ) -> dict:
     commit = _git("rev-parse", "HEAD")
     branch = _git("rev-parse", "--abbrev-ref", "HEAD")
-    base = _git("merge-base", "HEAD", "main") or ""
-    ahead = 0
-    if base:
-        ahead_s = _git("rev-list", "--count", f"{base}..HEAD")
-        ahead = int(ahead_s) if ahead_s.isdigit() else 0
 
     prompt_sha = ""
     if prompt_file.exists():
@@ -77,13 +109,11 @@ def build_meta(
             "commit": commit,
             "branch": branch,
             "dirty": _is_dirty(),
-            "ahead_of_main": ahead,
         },
         "config": {
-            "model": model,
-            "plan_mode": plan_mode,
-            "max_eval_iterations": max_eval_iterations,
+            "cells": cells,
             "n_runs": n_runs,
+            "seed": seed,
             "prompt_file": str(prompt_file),
             "prompt_sha1_12": prompt_sha,
         },
@@ -91,6 +121,7 @@ def build_meta(
             "platform": platform.platform(),
             "python": platform.python_version(),
             "ollama": _ollama_version(),
+            "claude_code": _claude_version(),
             "hostname": platform.node(),
         },
     }
@@ -114,27 +145,32 @@ def main() -> None:
     p.add_argument("command", choices=["new", "finish"])
     p.add_argument("--results-dir", required=True)
     p.add_argument("--run-id", default=None)
-    p.add_argument("--model", default="gemma4:26b")
-    p.add_argument("--plan-mode", default="always")
-    p.add_argument("--n-runs", type=int, default=3)
-    p.add_argument("--max-eval-iterations", type=int, default=5)
+    p.add_argument("--cells", default="A", help="Comma-separated cell IDs, e.g. A,B,D")
+    p.add_argument("--n-runs", type=int, default=5)
+    p.add_argument("--seed", type=int, default=42, help="RNG seed for run order")
     p.add_argument("--prompt-file", default="ab_test/prompt.md")
     args = p.parse_args()
 
     results_dir = Path(args.results_dir)
 
     if args.command == "new":
+        registry = load_cell_registry()
+        cells = resolve_cells(args.cells, registry)
         run_id = compute_run_id()
         run_dir = results_dir / run_id
         meta = build_meta(
             run_id=run_id,
-            model=args.model,
-            plan_mode=args.plan_mode,
+            cells=cells,
             n_runs=args.n_runs,
-            max_eval_iterations=args.max_eval_iterations,
+            seed=args.seed,
             prompt_file=Path(args.prompt_file),
         )
         write_meta(run_dir / "run_meta.json", meta)
+
+        # Pre-generate shuffled trial order so post-hoc randomization claims are auditable.
+        order = build_run_order(list(cells), args.n_runs, args.seed)
+        order_lines = [f"{c} {i}" for c, i in order]
+        (run_dir / "run_order.txt").write_text("\n".join(order_lines) + "\n")
 
         # If dirty, capture the working-tree diff so the experiment is reproducible.
         if meta["git"]["dirty"]:
