@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pomodoro</title>
+<style>
+  :root { --bg: #0d1117; --fg: #e6edf3; --accent: #58a6ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    max-width: 90vw;
+  }
+  .modes { display: flex; gap: 0.5rem; }
+  .mode {
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    font: inherit;
+  }
+  .mode.active { border-color: var(--accent); color: var(--accent); }
+  .mode:hover { background: rgba(88, 166, 255, 0.08); }
+  .countdown {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: clamp(4rem, 18vw, 9rem);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .controls { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    padding: 0.6rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    font: inherit;
+  }
+  .btn:hover { background: var(--accent); color: var(--bg); }
+  @media (max-width: 480px) {
+    main { gap: 1rem; padding: 1rem; }
+    .controls { gap: 0.5rem; }
+    .btn { padding: 0.5rem 1rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="modes">
+    <button class="mode active" id="mode-focus" type="button">Focus</button>
+    <button class="mode" id="mode-break" type="button">Break</button>
+  </div>
+  <div class="countdown" id="countdown">25:00</div>
+  <div class="controls">
+    <button class="btn" id="start" type="button">Start</button>
+    <button class="btn" id="pause" type="button">Pause</button>
+    <button class="btn" id="reset" type="button">Reset</button>
+  </div>
+</main>
+<script>
+(() => {
+  const DURATIONS = { focus: 25 * 60, break: 5 * 60 };
+  let mode = "focus";
+  let remaining = DURATIONS[mode];
+  let running = false;
+  let intervalId = null;
+
+  const countdown = document.getElementById("countdown");
+  const startBtn = document.getElementById("start");
+  const pauseBtn = document.getElementById("pause");
+  const resetBtn = document.getElementById("reset");
+  const focusBtn = document.getElementById("mode-focus");
+  const breakBtn = document.getElementById("mode-break");
+
+  const fmt = (s) => {
+    const m = Math.floor(Math.max(0, s) / 60);
+    const r = Math.max(0, s) % 60;
+    return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
+  };
+  const render = () => { countdown.textContent = fmt(remaining); };
+
+  const setMode = (next) => {
+    mode = next;
+    remaining = DURATIONS[mode];
+    focusBtn.classList.toggle("active", mode === "focus");
+    breakBtn.classList.toggle("active", mode === "break");
+    stop();
+    render();
+  };
+
+  const tick = () => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      remaining = 0;
+      stop();
+      beep();
+    }
+    render();
+  };
+
+  const start = () => {
+    if (running || remaining <= 0) return;
+    running = true;
+    intervalId = setInterval(tick, 1000);
+  };
+  const stop = () => {
+    running = false;
+    if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  };
+  const reset = () => { stop(); remaining = DURATIONS[mode]; render(); };
+
+  let audioCtx = null;
+  const beep = () => {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.value = 880;
+      osc.connect(gain).connect(audioCtx.destination);
+      gain.gain.value = 0.15;
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.4);
+    } catch (e) { /* ignore */ }
+  };
+
+  startBtn.addEventListener("click", start);
+  pauseBtn.addEventListener("click", stop);
+  resetBtn.addEventListener("click", reset);
+  focusBtn.addEventListener("click", () => setMode("focus"));
+  breakBtn.addEventListener("click", () => setMode("break"));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" || e.key === " ") {
+      e.preventDefault();
+      running ? stop() : start();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
