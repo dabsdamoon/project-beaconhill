@@ -33,3 +33,4 @@ ab_test/run.log
 ab_test/run_harness.log
 ab_test/cells/_smoke_*
 ab_test/cells/_diag_*
+.gstack/
