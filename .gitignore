@@ -30,3 +30,6 @@ docs/notes*
 ab_test/worktrees/
 ab_test/results*
 ab_test/run.log
+ab_test/run_harness.log
+ab_test/cells/_smoke_*
+ab_test/cells/_diag_*
