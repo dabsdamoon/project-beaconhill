@@ -29,7 +29,10 @@ Three-cell minimum-viable design. The full 2×2 is deferred (see §11).
 | **D** | gstack (process-first) | Haiku 4.5 (cloud, native) | New — gstack-native |
 
 **Cells dropped from MVP**:
+- **B** (gstack + Gemma 4 26B) — **deferred during execution**. Path B-1 (Claude Code → Ollama bridge) requires `--bare` mode to bypass OAuth, which also disables CLAUDE.md auto-discovery — the very mechanism gstack uses to surface skills. Path B-2 (alternate gstack host) introduces a second harness behavior under test. Either path conflates harness discipline with proxy fidelity and tool-calling translation quality. Skipping cell B preserves interpretability at the cost of losing H3's clean falsification.
 - **C** (Beaconhill + Haiku 4.5) — deferred. Beaconhill is local-first by design; porting it to Anthropic API is a non-trivial branch and not the cheapest cell to add. Run after MVP if H3 looks promising.
+
+**MVP cells executed**: A and D only. Two-cell pilot tests H1 partially (loop-first vs process-first across the natural model gap) and H2 partially (model-strength contribution under gstack), but cannot prove H3 (interaction effect).
 
 **Why this 3-cell set is sufficient for H3**:
 - **A vs B** isolates harness contribution at weak-model regime.
