@@ -1,0 +1,587 @@
+{
+  "run_dir": "ab_test/results/20260428T234639-53c165c",
+  "cells": {
+    "A": {
+      "runs": [
+        {
+          "run": "run-1",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": false,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 7057,
+          "notes": []
+        },
+        {
+          "run": "run-10",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": false,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 7706,
+          "notes": []
+        },
+        {
+          "run": "run-2",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": false,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 7036,
+          "notes": []
+        },
+        {
+          "run": "run-3",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": false,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 6879,
+          "notes": []
+        },
+        {
+          "run": "run-4",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": false,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 7336,
+          "notes": []
+        },
+        {
+          "run": "run-5",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": false,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 7166,
+          "notes": []
+        },
+        {
+          "run": "run-6",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": false,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 7046,
+          "notes": []
+        },
+        {
+          "run": "run-7",
+          "feature": {},
+          "aesthetic": {},
+          "feature_score": 0.0,
+          "aesthetic_score": 0.0,
+          "combined_score": 0.0,
+          "file_exists": false,
+          "size_bytes": 0,
+          "notes": [
+            "timer.html not produced"
+          ]
+        },
+        {
+          "run": "run-8",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": false,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 7214,
+          "notes": []
+        },
+        {
+          "run": "run-9",
+          "feature": {},
+          "aesthetic": {},
+          "feature_score": 0.0,
+          "aesthetic_score": 0.0,
+          "combined_score": 0.0,
+          "file_exists": false,
+          "size_bytes": 0,
+          "notes": [
+            "timer.html not produced"
+          ]
+        }
+      ],
+      "mean_feature": 0.711,
+      "mean_aesthetic": 0.8,
+      "mean_combined": 0.756,
+      "file_produced_rate": 0.8
+    },
+    "D": {
+      "runs": [
+        {
+          "run": "run-1",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 9290,
+          "notes": []
+        },
+        {
+          "run": "run-10",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 9317,
+          "notes": []
+        },
+        {
+          "run": "run-2",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 6562,
+          "notes": []
+        },
+        {
+          "run": "run-3",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 9643,
+          "notes": []
+        },
+        {
+          "run": "run-4",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 8266,
+          "notes": []
+        },
+        {
+          "run": "run-5",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 6232,
+          "notes": []
+        },
+        {
+          "run": "run-6",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 8971,
+          "notes": []
+        },
+        {
+          "run": "run-7",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": false,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 0.8888888888888888,
+          "aesthetic_score": 1.0,
+          "combined_score": 0.9444444444444444,
+          "file_exists": true,
+          "size_bytes": 9813,
+          "notes": []
+        },
+        {
+          "run": "run-8",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 8036,
+          "notes": []
+        },
+        {
+          "run": "run-9",
+          "feature": {
+            "has_focus_mode": true,
+            "has_break_mode": true,
+            "has_start_button": true,
+            "has_pause_button": true,
+            "has_reset_button": true,
+            "has_mm_ss_format": true,
+            "has_timer_loop": true,
+            "has_audio_alert": true,
+            "has_space_shortcut": true
+          },
+          "aesthetic": {
+            "color_background": true,
+            "color_text": true,
+            "color_accent": true,
+            "monospace_font": true,
+            "border_radius": true,
+            "transition": true,
+            "centering": true,
+            "responsive": true
+          },
+          "feature_score": 1.0,
+          "aesthetic_score": 1.0,
+          "combined_score": 1.0,
+          "file_exists": true,
+          "size_bytes": 6110,
+          "notes": []
+        }
+      ],
+      "mean_feature": 0.989,
+      "mean_aesthetic": 1.0,
+      "mean_combined": 0.994,
+      "file_produced_rate": 1.0
+    }
+  }
+}

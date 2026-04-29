@@ -1,0 +1,134 @@
+{
+  "pairs": [
+    {
+      "pair_id": 1,
+      "A": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 5,
+        "aesthetic": 5
+      },
+      "winner": "A",
+      "notes": "B has a mid-function syntax break (`audio                audioCtx.resume()`) that throws a ReferenceError on Safari and broken `audioCtx.append()` call in dead code, plus invalid CSS `var(--text/text-color)`; A is fully functional."
+    },
+    {
+      "pair_id": 2,
+      "A": {
+        "feature": 7,
+        "aesthetic": 7
+      },
+      "B": {
+        "feature": 8,
+        "aesthetic": 8
+      },
+      "winner": "B",
+      "notes": "A's Space shortcut silently fails when any button holds focus (`activeElement === document.body` guard), and the inline wav data-URI is garbage; B is cleaner with accent-colored timer and reliable toggle."
+    },
+    {
+      "pair_id": 3,
+      "A": {
+        "feature": 8,
+        "aesthetic": 7
+      },
+      "B": {
+        "feature": 8,
+        "aesthetic": 8
+      },
+      "winner": "B",
+      "notes": "Feature parity (both combine Start/Pause); B's 120 px accent-colored display is significantly more visually impactful than A's unstyled gray numerals."
+    },
+    {
+      "pair_id": 4,
+      "A": {
+        "feature": 2,
+        "aesthetic": 5
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "winner": "B",
+      "notes": "A places its script in `<head>` and captures DOM references before the DOM exists, crashing on every `updateDisplay()` call; B is fully functional with separate Start/Pause/Reset buttons."
+    },
+    {
+      "pair_id": 5,
+      "A": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 8,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "A correctly supplies separate Start, Pause, and Reset buttons per spec and adds a graceful auto-mode-switch on completion; B combines Start/Pause into one control."
+    },
+    {
+      "pair_id": 6,
+      "A": {
+        "feature": 8,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 8,
+        "aesthetic": 6
+      },
+      "winner": "A",
+      "notes": "Both combine Start/Pause; A reuses a single AudioContext and renders the countdown in accent blue, while B has a confusingly named `startPauseBoolean()` helper and a visually flat timer."
+    },
+    {
+      "pair_id": 7,
+      "A": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 6,
+        "aesthetic": 6
+      },
+      "winner": "A",
+      "notes": "B calls `window.alert()` on completion (blocking browser dialog) and combines Start/Pause; A uses a class, separate Start/Pause/Reset buttons, and a two-beep audio sequence."
+    },
+    {
+      "pair_id": 8,
+      "A": {
+        "feature": 0,
+        "aesthetic": 0
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "winner": "B",
+      "notes": "A produced no file; B is a complete, polished implementation using requestAnimationFrame for sub-second accuracy with proper separate Start/Pause/Reset controls."
+    },
+    {
+      "pair_id": 9,
+      "A": {
+        "feature": 9,
+        "aesthetic": 7
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "B increments elapsed time by 0.1 every 100 ms and passes the raw float to `String().padStart()`, producing display strings like '59.9999'; A uses integer decrement at 1 s intervals for correct MM:SS output."
+    },
+    {
+      "pair_id": 10,
+      "A": {
+        "feature": 0,
+        "aesthetic": 0
+      },
+      "B": {
+        "feature": 8,
+        "aesthetic": 7
+      },
+      "winner": "B",
+      "notes": "A produced no file; B delivers a clean implementation with correct colors and monospace display, though it combines Start/Pause into one button."
+    }
+  ]
+}
