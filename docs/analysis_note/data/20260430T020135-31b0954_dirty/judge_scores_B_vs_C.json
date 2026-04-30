@@ -1,0 +1,134 @@
+{
+  "pairs": [
+    {
+      "pair_id": 1,
+      "A": {
+        "feature": 3,
+        "aesthetic": 7
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "winner": "B",
+      "notes": "A uses setInterval(tick, 100) but decrements timeRemaining every call, making the countdown 10\u00d7 too fast \u2014 a fatal timing bug; B is functionally correct with proper 1 s interval and adds a double-beep alert."
+    },
+    {
+      "pair_id": 2,
+      "A": {
+        "feature": 9,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "Both are feature-complete; A edges out on aesthetics with glow box-shadow on active mode, text-shadow on the timer digit, and uppercase button labels that feel more deliberate."
+    },
+    {
+      "pair_id": 3,
+      "A": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "B's playAlert shares one gainNode between two oscillators, causing the second beep's envelope to conflict with the first's scheduled ramps; A's alert and all other features are clean."
+    },
+    {
+      "pair_id": 4,
+      "A": {
+        "feature": 8,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 6
+      },
+      "winner": "A",
+      "notes": "A has richer polish (glow on buttons, text-shadow on timer) and correct layout; B places the mode selector below the timer (non-standard), uses height:100vh instead of min-height risking mobile clipping, and omits duration labels from mode buttons."
+    },
+    {
+      "pair_id": 5,
+      "A": {
+        "feature": 7,
+        "aesthetic": 7
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "winner": "B",
+      "notes": "A merges Start and Pause into a single toggle button, violating the spec's requirement for separate Start and Pause controls; B implements all three buttons with correct disabled-state management."
+    },
+    {
+      "pair_id": 6,
+      "A": {
+        "feature": 8,
+        "aesthetic": 7
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "B's mode buttons show only 'Focus' and 'Break' without the '(25:00)'/'(5:00)' duration labels the spec implies; A includes them and is otherwise comparably styled."
+    },
+    {
+      "pair_id": 7,
+      "A": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 8,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "A implements proper button disabled-state toggling and a clean two-beep alert; B auto-switches modes on completion (unspecified behavior) and uses a 'Running\u2026' label trick instead of button state management."
+    },
+    {
+      "pair_id": 8,
+      "A": {
+        "feature": 8,
+        "aesthetic": 6
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 7
+      },
+      "winner": "TIE",
+      "notes": "A's Reset button uses purple (#6e40aa) which contradicts the spec's single accent color, and mode buttons omit duration labels; B merges Start/Pause into one button violating the three-button requirement \u2014 both miss different parts of the spec."
+    },
+    {
+      "pair_id": 9,
+      "A": {
+        "feature": 8,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 5,
+        "aesthetic": 5
+      },
+      "winner": "A",
+      "notes": "B uses a single cycling mode button (ambiguous which mode is active at a glance), merges Start/Pause, and applies word-spacing:100vw which can cause layout artifacts; A has clean dual mode buttons and proper separate controls."
+    },
+    {
+      "pair_id": 10,
+      "A": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 9
+      },
+      "winner": "B",
+      "notes": "Both are feature-complete; B adds a subtle text-shadow glow on the timer digits, generous letter-spacing, box-shadow lift on button hover, and clean class-based architecture that produces a noticeably more polished result."
+    }
+  ]
+}

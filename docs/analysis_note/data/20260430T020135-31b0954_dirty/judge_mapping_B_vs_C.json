@@ -1,0 +1,72 @@
+[
+  {
+    "pair_id": 1,
+    "A_source": "C",
+    "B_source": "B",
+    "B_run": "run-1",
+    "C_run": "run-1"
+  },
+  {
+    "pair_id": 2,
+    "A_source": "B",
+    "B_source": "C",
+    "B_run": "run-10",
+    "C_run": "run-10"
+  },
+  {
+    "pair_id": 3,
+    "A_source": "B",
+    "B_source": "C",
+    "B_run": "run-2",
+    "C_run": "run-2"
+  },
+  {
+    "pair_id": 4,
+    "A_source": "B",
+    "B_source": "C",
+    "B_run": "run-3",
+    "C_run": "run-3"
+  },
+  {
+    "pair_id": 5,
+    "A_source": "C",
+    "B_source": "B",
+    "B_run": "run-4",
+    "C_run": "run-4"
+  },
+  {
+    "pair_id": 6,
+    "A_source": "C",
+    "B_source": "B",
+    "B_run": "run-5",
+    "C_run": "run-5"
+  },
+  {
+    "pair_id": 7,
+    "A_source": "C",
+    "B_source": "B",
+    "B_run": "run-6",
+    "C_run": "run-6"
+  },
+  {
+    "pair_id": 8,
+    "A_source": "B",
+    "B_source": "C",
+    "B_run": "run-7",
+    "C_run": "run-7"
+  },
+  {
+    "pair_id": 9,
+    "A_source": "B",
+    "B_source": "C",
+    "B_run": "run-8",
+    "C_run": "run-8"
+  },
+  {
+    "pair_id": 10,
+    "A_source": "B",
+    "B_source": "C",
+    "B_run": "run-9",
+    "C_run": "run-9"
+  }
+]

@@ -7,17 +7,38 @@
     "status": "ready"
   },
   "B": {
-    "name": "gstack + Gemma 4 26B (via Claude Code -> Ollama)",
-    "harness": "gstack",
-    "model": "gemma4:26b",
+    "name": "bare Claude Code + Haiku 4.5",
+    "harness": "claude_code_bare",
+    "model": "claude-haiku-4-5-20251001",
     "runner": "cells/run_cell_b.sh",
-    "status": "not_implemented"
+    "status": "ready"
+  },
+  "C": {
+    "name": "karpathy-guidelines + Claude Code + Haiku 4.5",
+    "harness": "claude_code_karpathy",
+    "model": "claude-haiku-4-5-20251001",
+    "runner": "cells/run_cell_c.sh",
+    "status": "ready"
   },
   "D": {
     "name": "gstack + Haiku 4.5",
     "harness": "gstack",
     "model": "claude-haiku-4-5-20251001",
     "runner": "cells/run_cell_d.sh",
+    "status": "ready"
+  },
+  "E": {
+    "name": "gstack + Gemma 4 26B (via Claude Code -> Ollama)",
+    "harness": "gstack",
+    "model": "gemma4:26b",
+    "runner": "cells/run_cell_e.sh",
+    "status": "not_implemented"
+  },
+  "F": {
+    "name": "karpathy-guidelines + Claude Code + Gemma 4 26B",
+    "harness": "claude_code_karpathy",
+    "model": "gemma4:26b",
+    "runner": "cells/run_cell_f.sh",
     "status": "not_implemented"
   }
 }

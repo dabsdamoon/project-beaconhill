@@ -21,6 +21,11 @@ evals/results/
 # Project-level config (local preferences)
 .beaconhill/
 
+# Local env files (API keys, etc.) — never commit
+.env
+.env.*
+!.env.example
+
 # temporary files
 tmp/
 .claude/*

@@ -1,22 +1,16 @@
 #!/bin/bash
-# Cell B runner: bare Claude Code (no skills, no hooks, no auto-memory) + Haiku 4.5.
+# Cell C runner: karpathy-guidelines (system-prompt overlay) + Claude Code + Haiku 4.5.
 #
-# Goal: establish a "default Claude Code" baseline for the harness comparison.
-# `--bare` strips: hooks, LSP, plugin sync, attribution, auto-memory, keychain
-# reads, CLAUDE.md auto-discovery. `--disable-slash-commands` blocks any skill
-# from being invoked even via /name.
+# Differs from cell B by exactly one flag: --append-system-prompt-file pointing
+# at the vendored karpathy CLAUDE.md. Same --bare, same --disable-slash-commands,
+# same model, same auth, same prompt path. Any quality delta C-vs-B isolates
+# the karpathy-guidelines effect.
 #
 # Auth: --bare forces ANTHROPIC_API_KEY (OAuth and keychain are never read).
-# Caller must export ANTHROPIC_API_KEY (e.g. `export ANTHROPIC_API_KEY="$(op read 'op://Dev/Anthropic API/credential')"`).
 #
-# Usage: bash run_cell_b.sh <run_dir> <prompt_file>
+# Usage: bash run_cell_c.sh <run_dir> <prompt_file>
 #
-# Output (in <run_dir>):
-#   timer.html         the deliverable (when produced)
-#   stdout.txt         claude --print JSON output
-#   stderr.txt         claude stderr
-#   wall_seconds.txt   wallclock for the run
-#   cell_meta.json     model, harness, model_used, cost, duration
+# Output: same as cell B, plus karpathy_sha in cell_meta.json.
 set -euo pipefail
 
 OUT="$1"
@@ -27,10 +21,18 @@ mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"
 PROMPT_FILE="$(cd "$(dirname "$PROMPT_FILE")" && pwd)/$(basename "$PROMPT_FILE")"
 MODEL="${HAIKU_MODEL:-claude-haiku-4-5-20251001}"
+KARPATHY_FILE="$ROOT/ab_test/cells/karpathy_guidelines.md"
+# Frozen upstream SHA recorded in the vendored file's header comment.
+KARPATHY_SHA="2c606141936f1eeef17fa3043a72095b4765b9c2"
 
 if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
-    echo "[cell-b] ANTHROPIC_API_KEY not set. --bare requires it." >&2
+    echo "[cell-c] ANTHROPIC_API_KEY not set. --bare requires it." >&2
     echo "        export ANTHROPIC_API_KEY=\"\$(op read 'op://Dev/Anthropic API/credential')\"" >&2
+    exit 78
+fi
+
+if [[ ! -f "$KARPATHY_FILE" ]]; then
+    echo "[cell-c] vendored karpathy file missing: $KARPATHY_FILE" >&2
     exit 78
 fi
 
@@ -41,26 +43,28 @@ t0=$(python3 -c 'import time; print(time.time())')
     ANTHROPIC_MODEL="$MODEL" \
         claude --bare \
                --disable-slash-commands \
+               --append-system-prompt-file "$KARPATHY_FILE" \
                --print \
                --model "$MODEL" \
                --permission-mode bypassPermissions \
                --output-format json \
         < "$PROMPT_FILE" \
-        > "$OUT/stdout.txt" 2> "$OUT/stderr.txt" || echo "[cell-b] claude exited non-zero"
+        > "$OUT/stdout.txt" 2> "$OUT/stderr.txt" || echo "[cell-c] claude exited non-zero"
 )
 
 t1=$(python3 -c 'import time; print(time.time())')
 python3 -c "print(round($t1 - $t0, 2))" > "$OUT/wall_seconds.txt"
 
-python3 - "$OUT/stdout.txt" "$OUT/cell_meta.json" "$MODEL" <<'PY'
+python3 - "$OUT/stdout.txt" "$OUT/cell_meta.json" "$MODEL" "$KARPATHY_SHA" <<'PY'
 import json, sys
 from pathlib import Path
 
-stdout_path, meta_path, requested_model = sys.argv[1:4]
+stdout_path, meta_path, requested_model, karpathy_sha = sys.argv[1:5]
 meta = {
-    "cell": "B",
-    "harness": "claude_code_bare",
+    "cell": "C",
+    "harness": "claude_code_karpathy",
     "model": requested_model,
+    "karpathy_sha": karpathy_sha,
     "model_used": None,
     "duration_ms": None,
     "cost_usd": None,
@@ -83,5 +87,5 @@ PY
 
 USED=$(python3 -c "import json; print(json.load(open('$OUT/cell_meta.json')).get('model_used') or '')")
 if [[ "$USED" != "$MODEL" ]]; then
-    echo "[cell-b] WARNING: model_used=$USED differs from requested=$MODEL" >&2
+    echo "[cell-c] WARNING: model_used=$USED differs from requested=$MODEL" >&2
 fi

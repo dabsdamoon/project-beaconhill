@@ -1,7 +1,7 @@
 # Experiment: Loop-First vs. Process-First Harnesses
 
 **Branch**: `feat/gstack-and-haiku`
-**Status**: Pre-registered design. No results yet.
+**Status**: Revised after pilot. Cells A and D executed (n=10); see [`docs/analysis_note/loop-vs-process-pilot.md`](../analysis_note/loop-vs-process-pilot.md). Cells B and C now repurposed as Haiku-side ablations (see §2 revision note).
 **Related work**: [`docs/release_note/harness-convergence.md`](../release_note/harness-convergence.md)
 
 ---
@@ -20,24 +20,28 @@ H3 is the interesting result. H1 and H2 are sanity checks — if either fails, t
 
 ## 2. Cells
 
-Three-cell minimum-viable design. The full 2×2 is deferred (see §11).
+### Revision (post-pilot)
+
+The original 3-cell MVP (A=Beaconhill+Gemma, B=gstack+Gemma, D=gstack+Haiku) ran A and D only; B was deferred at execution time due to the OAuth/`--bare` confound. After the pilot, cells B and C have been **repurposed** to ladder the harness-overlay axis at fixed strong model (Haiku):
 
 | ID | Harness | Model | Status |
 |----|---------|-------|--------|
-| **A** | Beaconhill (loop-first) | Gemma 4 26B (local Ollama) | Existing — `main` runner reused |
-| **B** | gstack (process-first) | Gemma 4 26B (local Ollama, via Claude Code → Ollama bridge) | New — requires bridge setup |
-| **D** | gstack (process-first) | Haiku 4.5 (cloud, native) | New — gstack-native |
+| **A** | Beaconhill (loop-first, plan→generate→evaluate) | Gemma 4 26B (local Ollama) | Run (n=10) — pilot 2026-04-28 |
+| **B** | bare Claude Code (`--bare --disable-slash-commands`, no skills/hooks/auto-memory) | Haiku 4.5 | Ready (runner committed) |
+| **C** | karpathy-guidelines (~70-line system-prompt overlay on bare CC) | Haiku 4.5 | Ready (runner committed) |
+| **D** | gstack (process-first, ~25 skills + browser daemon + learnings store) | Haiku 4.5 | Run (n=10) — pilot 2026-04-28 |
+| **E** | gstack (process-first) | Gemma 4 26B (local Ollama, via Claude Code → Ollama bridge) | Deferred — bridge confound (was old "B") |
+| **F** | karpathy-guidelines + bare CC | Gemma 4 26B (local Ollama) | Deferred — depends on E's bridge work |
 
-**Cells dropped from MVP**:
-- **B** (gstack + Gemma 4 26B) — **deferred during execution**. Path B-1 (Claude Code → Ollama bridge) requires `--bare` mode to bypass OAuth, which also disables CLAUDE.md auto-discovery — the very mechanism gstack uses to surface skills. Path B-2 (alternate gstack host) introduces a second harness behavior under test. Either path conflates harness discipline with proxy fidelity and tool-calling translation quality. Skipping cell B preserves interpretability at the cost of losing H3's clean falsification.
-- **C** (Beaconhill + Haiku 4.5) — deferred. Beaconhill is local-first by design; porting it to Anthropic API is a non-trivial branch and not the cheapest cell to add. Run after MVP if H3 looks promising.
+**What the new B and C add over the pilot**:
+- **B vs D** isolates the *gstack* contribution holding model fixed at Haiku.
+- **C vs B** isolates the karpathy overlay (which is essentially a guides-only mod, no new sensors or tools).
+- **C vs D** asks whether a 70-line behavioral overlay captures most of gstack's value, or whether gstack's tool/skill infrastructure adds substantively beyond text-only guidance.
+- **C, B, D triplet at Haiku** ladders harness investment from zero → light overlay → heavy harness, holding the strong model constant.
 
-**MVP cells executed**: A and D only. Two-cell pilot tests H1 partially (loop-first vs process-first across the natural model gap) and H2 partially (model-strength contribution under gstack), but cannot prove H3 (interaction effect).
+**Cells deferred (E, F)**: both require a Claude Code → Ollama bridge to host non-Anthropic models inside Claude Code's runtime. `--bare` strips OAuth and forces `ANTHROPIC_API_KEY` only — which the bridge can spoof — but the bridge also disables CLAUDE.md auto-discovery (which gstack relies on for skill loading). Path B-2 (alternate gstack host like OpenCode) introduces a second harness under test. Either path conflates harness discipline with bridge fidelity. E/F revisited after B/C results.
 
-**Why this 3-cell set is sufficient for H3**:
-- **A vs B** isolates harness contribution at weak-model regime.
-- **B vs D** isolates model contribution under process-first.
-- The interaction term H3 falls out by comparing (A − B) at Gemma against (C − D) at Haiku. Without C we can't fully prove H3, but we can falsify it: if B > A on Gemma, H3 is dead.
+**Hypotheses (H1–H3) below were written for the original 3-cell design and need re-aligning to this matrix; treat them as draft.**
 
 ---
 
@@ -145,22 +149,19 @@ Shuffle (A, B, D) × 5 = 15 trials, randomized order. Pre-generate the order wit
 
 No new work. Use existing `ab_test/run.sh` adapted to write into the new multi-cell layout.
 
-### Cell B — gstack + Gemma (the hard cell)
+### Cell B — bare Claude Code + Haiku
 
-Two viable paths:
+- `claude --bare --disable-slash-commands --print --model claude-haiku-4-5-20251001 --permission-mode bypassPermissions --output-format json`
+- `--bare` skips: hooks, LSP, plugin sync, attribution, auto-memory, keychain reads, CLAUDE.md auto-discovery.
+- `--disable-slash-commands` prevents skills (gstack, karpathy, etc. installed at `~/.claude/skills/`) from being invoked even by accident.
+- Auth: `--bare` forces `ANTHROPIC_API_KEY` (OAuth/keychain never read). Caller exports `ANTHROPIC_API_KEY="$(op read 'op://Dev/Anthropic API/credential')"` once before the sweep.
+- Cost confound vs cell D: D used OAuth/Max (free per call), B uses pay-per-token API (~$0.20–0.50/run). Quality should be unaffected; cost reporting needs the asterisk.
 
-**Path B-1 (preferred): Claude Code → Ollama bridge**
-- Install Claude Code CLI.
-- Configure `ANTHROPIC_BASE_URL` to point at an Ollama-fronted Anthropic-compatible proxy (Ollama's docs cover this integration).
-- Pull gstack's relevant skills into the workspace.
-- Risks: tool-calling format differences, prompt-caching assumptions in gstack that don't hold for Gemma, context-window mismatch (Haiku ~200K, Gemma 4 26B 256K — fine, but caching behavior diverges).
+### Cell C — karpathy-guidelines + bare Claude Code + Haiku
 
-**Path B-2 (fallback): OpenCode or another gstack host pointed at Ollama**
-- gstack supports multiple hosts (`hosts/opencode.ts`, `codex.ts`).
-- OpenCode reportedly supports OpenAI-compatible endpoints, which Ollama exposes.
-- May require less bridging than Claude Code, but gstack's most-tuned host is Claude — running on a different host is its own confound.
-
-**Decision**: try B-1 first. If gstack workflows don't run cleanly within ~2 hours of bridge debugging, fall back to B-2 and document the host swap as a known confound.
+- Same as cell B, plus `--append-system-prompt-file ab_test/cells/karpathy_guidelines.md`.
+- `karpathy_guidelines.md` is a frozen vendored copy of the [andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) `CLAUDE.md` (upstream SHA `2c606141`, MIT-licensed, ~65 lines, four behavioral principles: think-before-coding, simplicity-first, surgical-changes, goal-driven-execution).
+- Cell C differs from cell B by **exactly one CLI flag**, isolating the karpathy overlay's effect.
 
 ### Cell D — gstack + Haiku
 
@@ -226,7 +227,8 @@ Reuse existing infrastructure with cell-aware extensions:
 
 ## 11. Out of scope (deferred)
 
-- **Cell C** (Beaconhill + Haiku) — deferred to a follow-on if H3 looks supported.
+- **Cells E and F** (gstack + Gemma; karpathy + Gemma) — both blocked on the Claude Code → Ollama bridge. Revisit after B/C run.
+- **Beaconhill + Haiku** — the original "cell C" concept. Beaconhill is local-first by design; porting it to Anthropic API is non-trivial. Worth running iff the B/C/D ladder shows harness-overlay value scales meaningfully on a strong model.
 - **Tasks beyond Pomodoro** — e.g., a CLI tool, a small CRUD API, a state-machine UI. Each adds ~1 day of rubric work.
 - **Cost analysis** — Haiku token cost vs. Gemma electricity cost. Worth a back-of-envelope but not gating.
 - **Latency-to-first-meaningful-output** — interesting but requires instrumentation each harness doesn't currently emit.
