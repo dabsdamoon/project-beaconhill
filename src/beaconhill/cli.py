@@ -97,6 +97,18 @@ def _replay_session(path: Path) -> None:
     ui.replay_footer()
 
 
+def _make_client(config: Config) -> Any:
+    """Pick OllamaClient or AnthropicClient based on the model name.
+
+    `claude-*` -> AnthropicClient (requires ANTHROPIC_API_KEY in env).
+    Anything else -> OllamaClient against `config.host`.
+    """
+    if config.model.startswith("claude-"):
+        from beaconhill.anthropic_client import AnthropicClient
+        return AnthropicClient(model=config.model)
+    return OllamaClient(model=config.model, host=config.host)
+
+
 def main() -> None:
     args = parse_args()
 
@@ -111,7 +123,7 @@ def main() -> None:
         _replay_session(path)
         return
 
-    client = OllamaClient(model=config.model, host=config.host)
+    client = _make_client(config)
     registry = create_default_registry()
 
     # Resume or new session

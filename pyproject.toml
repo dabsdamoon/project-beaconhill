@@ -16,6 +16,9 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+cloud = [
+    "anthropic>=0.40,<1.0",
+]
 
 [project.scripts]
 beaconhill = "beaconhill.cli:main"

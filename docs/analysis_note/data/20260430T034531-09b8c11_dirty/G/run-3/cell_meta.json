@@ -1,0 +1,16 @@
+{
+  "cell": "G",
+  "harness": "beaconhill",
+  "model": "claude-haiku-4-5-20251001",
+  "model_used": "claude-haiku-4-5-20251001",
+  "cache_mode": "rolling",
+  "total_cost_usd": 0.159736,
+  "usage_totals": {
+    "calls": 31,
+    "input_tokens": 9841,
+    "output_tokens": 16563,
+    "cache_read_input_tokens": 218889,
+    "cache_creation_input_tokens": 36153,
+    "cost_usd": 0.159736
+  }
+}

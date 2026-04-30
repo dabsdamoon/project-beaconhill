@@ -15,6 +15,26 @@
 
 ---
 
+## What "bare" Claude Code means here
+
+"Bare" doesn't mean "no harness at all" — it means the minimal default Claude Code harness with no overlays. Cell B's `claude --bare --disable-slash-commands` strips:
+
+- All skills (`~/.claude/skills/*` — gstack, karpathy, etc.) and slash-command invocations
+- CLAUDE.md auto-discovery (project + global)
+- SessionStart hooks (e.g. `superpowers:using-superpowers` injecting context)
+- Auto-memory, plugin sync, LSP, keychain reads, attribution
+
+But Cell B still runs **inside Claude Code** — its built-in agentic loop, default tool set (Read, Write, Edit, Bash, Glob, Grep, etc.), and system prompt are all active. The experiment therefore lives on two axes, not one:
+
+| Axis | Cells | What's varied |
+|---|---|---|
+| **Agent stack substitution** | A (Beaconhill, Python orchestrator) vs B/C/D (all on Claude Code) | Entirely different process and loop architecture |
+| **Overlay layering within Claude Code** | B (none) → C (karpathy ~70-line system prompt) → D (gstack ~25 skills + browser daemon + learnings) | Additions on top of CC's default loop |
+
+The B/C/D ladder is the cleanest comparison in the whole matrix because all three share the same loop, tools, and base system prompt — only the overlay changes. The pilot's A-vs-D result conflated the agent stack swap (Beaconhill ↔ CC) with the model swap (Gemma ↔ Haiku); neither alone explains the gap. The B-vs-C ablation isolates the karpathy overlay's effect cleanly because everything else is identical.
+
+---
+
 ## Setup recap
 
 Two new cells, both at fixed model = Haiku 4.5:

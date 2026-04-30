@@ -1,0 +1,32 @@
+{
+  "run_id": "20260430T034531-09b8c11_dirty",
+  "started_at": "2026-04-30T03:45:31.862513+00:00",
+  "git": {
+    "commit": "09b8c1146d8c64983b5837996533393d6f2f72ff",
+    "branch": "feat/gstack-and-haiku",
+    "dirty": true
+  },
+  "config": {
+    "cells": {
+      "G": {
+        "name": "Beaconhill + Haiku 4.5 (via Anthropic API)",
+        "harness": "beaconhill",
+        "model": "claude-haiku-4-5-20251001",
+        "runner": "cells/run_cell_g.sh",
+        "status": "ready"
+      }
+    },
+    "n_runs": 3,
+    "seed": 42,
+    "prompt_file": "/Users/dabsdamoon/projects/project-beaconhill/ab_test/prompt.md",
+    "prompt_sha1_12": "410fa6784fa5"
+  },
+  "env": {
+    "platform": "macOS-26.4.1-arm64-arm-64bit",
+    "python": "3.12.13",
+    "ollama": "Warning: could not connect to a running Ollama instance",
+    "claude_code": "2.1.123 (Claude Code)",
+    "hostname": "MacBook-Pro.local"
+  },
+  "finished_at": "2026-04-30T03:52:45.011756+00:00"
+}
