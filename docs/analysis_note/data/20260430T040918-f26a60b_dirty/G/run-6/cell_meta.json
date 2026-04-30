@@ -1,0 +1,18 @@
+{
+  "cell": "G",
+  "harness": "beaconhill",
+  "model": "claude-haiku-4-5-20251001",
+  "model_used": "claude-haiku-4-5-20251001",
+  "cache_mode": "rolling",
+  "total_cost_usd": 0.194023,
+  "usage_totals": {
+    "calls": 53,
+    "input_tokens": 28813,
+    "output_tokens": 14296,
+    "cache_read_input_tokens": 511086,
+    "cache_creation_input_tokens": 34097,
+    "cost_usd": 0.194023
+  },
+  "partial": true,
+  "partial_reason": "sweep killed by user; timer.html present, evaluator phase not confirmed complete"
+}

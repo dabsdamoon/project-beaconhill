@@ -1,0 +1,69 @@
+{
+  "pairs": [
+    {
+      "pair_id": 1,
+      "A": {
+        "feature": 9,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "B wires both the Start and Pause buttons to the same toggleStartPause function (redundant), the countdown is smaller (72px vs 120px), and the Start/Pause/Reset disabled-state management is absent."
+    },
+    {
+      "pair_id": 2,
+      "A": {
+        "feature": 8,
+        "aesthetic": 7
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 8
+      },
+      "winner": "A",
+      "notes": "A has all three distinct control buttons with proper disabled states; B merges Start/Pause into one toggle (missing a separate Pause button per spec) and auto-resets at 00:00 without being asked, though B's solid-fill control buttons and colored countdown are aesthetically stronger."
+    },
+    {
+      "pair_id": 3,
+      "A": {
+        "feature": 8,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 9
+      },
+      "winner": "B",
+      "notes": "A silently auto-resets after the alert fires (not in spec); B has all buttons correctly separated, a visually distinctive outlined Reset vs filled Start/Pause, and a colored monospace countdown at 96px."
+    },
+    {
+      "pair_id": 4,
+      "A": {
+        "feature": 8,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 8
+      },
+      "winner": "A",
+      "notes": "B uses a single cycling mode button instead of two dedicated mode buttons and collapses Start/Pause into one toggle, missing the spec's three-button control layout; A correctly disables mode buttons while running and has all required buttons."
+    },
+    {
+      "pair_id": 5,
+      "A": {
+        "feature": 9,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 8,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "B has no media query, so the countdown and buttons do not adapt at mobile widths, violating the spec; A uses a 120px countdown with a subtle glow, disables mode buttons while running, and handles mobile with a proper breakpoint."
+    }
+  ]
+}

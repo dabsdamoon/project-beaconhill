@@ -1,0 +1,69 @@
+{
+  "pairs": [
+    {
+      "pair_id": 1,
+      "A": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "winner": "A",
+      "notes": "A has clean disabled-state management and a separate Start/Pause button model; B merges Start/Pause into one cycling button with a redundant separate Pause that creates duplicate toggle calls, and lacks mobile media queries."
+    },
+    {
+      "pair_id": 2,
+      "A": {
+        "feature": 10,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "winner": "B",
+      "notes": "Both are fully feature-complete; B earns the aesthetic edge with filled vs. outlined button hierarchy, a live status line, and a class-based OOP structure that keeps DOM queries clean."
+    },
+    {
+      "pair_id": 3,
+      "A": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "winner": "B",
+      "notes": "Feature parity; B's 120px accent-colored timer is more visually impactful and its uniform outline button language is more internally consistent, narrowly edging A's solid dark inactive button style."
+    },
+    {
+      "pair_id": 4,
+      "A": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "winner": "B",
+      "notes": "Both feature-complete; B's `clamp(60px, 15vw, 120px)` timer sizing is elegantly responsive and its filled-Start / outlined-Pause-Reset hierarchy communicates the primary action more clearly."
+    },
+    {
+      "pair_id": 5,
+      "A": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 10,
+        "aesthetic": 8
+      },
+      "winner": "A",
+      "notes": "Both feature-complete; A has a better visual hierarchy with primary filled Start and secondary outlined Pause/Reset buttons, plus a mobile media query that B omits entirely."
+    }
+  ]
+}

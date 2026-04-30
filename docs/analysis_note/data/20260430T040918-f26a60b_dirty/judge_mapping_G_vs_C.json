@@ -1,0 +1,37 @@
+[
+  {
+    "pair_id": 1,
+    "A_source": "C",
+    "B_source": "G",
+    "G_run": "run-3",
+    "C_run": "run-3"
+  },
+  {
+    "pair_id": 2,
+    "A_source": "G",
+    "B_source": "C",
+    "G_run": "run-4",
+    "C_run": "run-4"
+  },
+  {
+    "pair_id": 3,
+    "A_source": "G",
+    "B_source": "C",
+    "G_run": "run-6",
+    "C_run": "run-6"
+  },
+  {
+    "pair_id": 4,
+    "A_source": "G",
+    "B_source": "C",
+    "G_run": "run-8",
+    "C_run": "run-8"
+  },
+  {
+    "pair_id": 5,
+    "A_source": "C",
+    "B_source": "G",
+    "G_run": "run-9",
+    "C_run": "run-9"
+  }
+]
