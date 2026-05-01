@@ -1,0 +1,69 @@
+{
+  "pairs": [
+    {
+      "pair_id": 1,
+      "A": {
+        "feature": 9,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 8,
+        "aesthetic": 7
+      },
+      "winner": "A",
+      "notes": "A has better button differentiation (primary vs secondary style) and the Start\u2192Resume label feedback; B's uniform button styling and missing label update make it feel less finished."
+    },
+    {
+      "pair_id": 2,
+      "A": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 9,
+        "aesthetic": 9
+      },
+      "winner": "B",
+      "notes": "B's CSS custom properties, cleaner vertical stacking on mobile, and auto-mode-switch polish edge out A, whose global button:hover rule awkwardly overrides the mode-button active state."
+    },
+    {
+      "pair_id": 3,
+      "A": {
+        "feature": 9,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "winner": "B",
+      "notes": "B earns the full feature score with disabled mode buttons while running, a two-beep alert, and an accent-colored display; A's darker inactive mode button style diverges from the accent-forward spec."
+    },
+    {
+      "pair_id": 4,
+      "A": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "B": {
+        "feature": 7,
+        "aesthetic": 9
+      },
+      "winner": "A",
+      "notes": "B uses a 100ms interval with float accumulation (elapsedTime += 0.1), causing the MM:SS display to show fractional seconds (e.g. '24:59.9'); A implements all features correctly."
+    },
+    {
+      "pair_id": 5,
+      "A": {
+        "feature": 8,
+        "aesthetic": 8
+      },
+      "B": {
+        "feature": 10,
+        "aesthetic": 9
+      },
+      "winner": "B",
+      "notes": "A merges Start and Pause into one button, failing the spec's explicit 'Start, Pause, and Reset buttons' requirement; B provides all three separately with an accent-colored display."
+    }
+  ]
+}

@@ -67,18 +67,33 @@ G ran with `BEACONHILL_CACHE_MODE=rolling` (Option B caching from the prior anal
 | 5 | run-9 / run-9 | **C** | 9 / 9 | 8 / 7 |
 | **total** | | **C 3, G 2** | mean 8.0 / 7.8 | mean 8.0 / 8.2 |
 
+#### G vs D (5 pairs)
+
+| Pair | G run / D run | Winner | G feature/aes | D feature/aes |
+|---|---|---|---|---|
+| 1 | run-3 / run-3 | **D** | 9 / 9 | 8 / 7 |
+| 2 | run-4 / run-4 | **D** | 9 / 8 | 9 / 9 |
+| 3 | run-6 / run-6 | **D** | 9 / 8 | 10 / 9 |
+| 4 | run-8 / run-8 | **G** | 10 / 9 | 7 / 9 |
+| 5 | run-9 / run-9 | **D** | 8 / 8 | 10 / 9 |
+| **total** | | **D 3, G 2** | mean 9.0 / 8.4 | mean 8.8 / 8.6 |
+
+Notable failures the judge flagged on the side that lost each pair:
+- G/run-9 (lost to D): "merges Start and Pause into one button, failing the spec's explicit three-button requirement" — same Beaconhill blind spot we saw vs C.
+- D/run-8 (lost to G): "100ms interval with float accumulation causing MM:SS to display fractional seconds (e.g. '24:59.9')" — Haiku's first-shot timing bug that gstack didn't catch but Beaconhill's evaluator did.
+
 #### Synthesis across all four Haiku cells
 
 Combining this run's G results with the prior B-vs-C and A-vs-D pairwise judges:
 
-| Cell | Layer-1 mean | Judge feature mean | Judge aesthetic mean | Judge wins (across all pairings) |
-|---|---|---|---|---|
-| **B** bare CC+Haiku | 16.70 | 8.4 (vs C), 10.0 (vs G) | 7.8 (vs C), 9.0 (vs G) | 6 (vs C) + 5 (vs G) = **11** |
-| C karpathy+CC+Haiku | 15.70 | 7.1 (vs B), 8.0 (vs G) | 7.0 (vs B), 8.2 (vs G) | 3 (vs B) + 3 (vs G) = 6 |
-| D gstack+Haiku | 15.90 | 8.4 (vs A) | 7.8 (vs A) | 9 (vs A); not directly compared to B/C/G |
-| **G** Beaconhill+Haiku | **17.20** | 9.8 (vs B), 8.0 (vs C) | 8.6 (vs B), 7.8 (vs C) | 0 (vs B) + 2 (vs C) = 2 |
+| Cell | Layer-1 mean | Direct judge head-to-heads | Judge wins total |
+|---|---|---|---|
+| **B** bare CC+Haiku | 16.70 | beats C 6-3-1, beats G 5-0 | **11** |
+| C karpathy+CC+Haiku | 15.70 | loses to B 3-6-1, beats G 3-2 | 6 |
+| D gstack+Haiku | 15.90 | beats G 3-2; (vs A: 9-1, model swap) | 3 (vs G) |
+| **G** Beaconhill+Haiku | **17.20** | loses to B 0-5, loses to C 2-3, loses to D 2-3 | 4 |
 
-**Bare CC dominates the pairwise judge across all comparisons made**. Beaconhill's loop scores highest on Layer-1 but lowest on judge wins.
+**Bare CC dominates every pairwise comparison made.** Beaconhill's loop scores highest on Layer-1 but loses head-to-head against B, C, and D on judged quality.
 
 ---
 
